@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Generador de Certificados - UNAMAD",
   description: "Genera certificados profesionales de manera rápida y sencilla",
+  icons: {
+    icon: "/img/logo.png",
+  },
 };
 
 export default function RootLayout({ children }) {
