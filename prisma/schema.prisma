@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String     // Hash con bcrypt
+  name      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  templates Template[]
+}
+
+model Template {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  backgroundData Json     // { images: [{ imageData, width, height }] }
+  fieldsPage1    Json     // Array de campos del anverso
+  fieldsPage2    Json     // Array de campos del reverso (puede ser [])
+  excelHeaders   Json     // Headers para referencia
+  canvasWidth    Int
+  canvasHeight   Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
