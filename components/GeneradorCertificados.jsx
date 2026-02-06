@@ -207,7 +207,7 @@ function GeneradorCertificados() {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, blankrows: false });
 
         if (jsonData.length === 0) {
           Swal.fire({
@@ -220,7 +220,14 @@ function GeneradorCertificados() {
         }
 
         const headers = jsonData[0];
-        const rows = jsonData.slice(1).filter(row => row.some(cell => cell !== undefined && cell !== ''));
+        const rows = jsonData.slice(1).filter(row => {
+        if (!row || row.length === 0) return false;
+        // Verificar que al menos una de las 4 columnas requeridas tenga contenido real
+        const requiredCells = row.slice(0, 4);
+        return requiredCells.some(cell =>
+          cell !== undefined && cell !== null && String(cell).trim() !== ''
+        );
+      });
 
         const requiredColumns = ['numero_secuencial', 'numero_documento', 'nombre_completo', 'cargo'];
         const headersTrimmed = headers.slice(0, 4).map(h => String(h).trim().toLowerCase());
