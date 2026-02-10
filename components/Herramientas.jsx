@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import Link from 'next/link';
 import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
-import { Upload, Download, Home, FileCheck, FolderOpen, FileText, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Upload, Download, Home, FileCheck, FolderOpen, FileText, ArrowLeft, ChevronRight, Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
 import * as XLSX from 'xlsx';
@@ -23,7 +23,7 @@ const TOOLS = [
   {
     id: 'organize',
     title: 'Organizador de PDFs en Carpetas',
-    description: 'Divide un PDF de varias páginas en archivos individuales, los renombra con correlativo y número de documento, y los organiza en carpetas de 50.',
+    description: 'Sube un Excel con DNIs y un Word o PDF. Detecta los DNIs automáticamente, convierte Word a PDF si es necesario, y organiza todo en carpetas de 50.',
     icon: FolderOpen,
     gradient: 'from-violet-600 to-violet-700',
     bgLight: 'bg-violet-50',
@@ -52,17 +52,17 @@ function Herramientas() {
   const [totalPDFs, setTotalPDFs] = useState(0);
   const zipInputRef = useRef(null);
 
-  // Tool 2: Organize PDFs
+  // Tool 2: Organize PDFs - subida masiva con reordenamiento
   const [correlativo, setCorrelativo] = useState('');
-  const [documentNumbers, setDocumentNumbers] = useState([]);
-  const [inputMethod, setInputMethod] = useState('textarea');
-  const [textareaValue, setTextareaValue] = useState('');
-  const [pdfFile, setPdfFile] = useState(null);
+  const [excelInfos, setExcelInfos] = useState([]); // { file, dnis, sheetName, processing }
+  const [docInfos, setDocInfos] = useState([]); // { file, pageCount, pdfBytes, processing }
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [organizeProgress, setOrganizeProgress] = useState(0);
   const [organizeTotalPDFs, setOrganizeTotalPDFs] = useState(0);
-  const pdfInputRef = useRef(null);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOverIdx, setDragOverIdx] = useState(null);
   const excelInputRef = useRef(null);
+  const docInputRef = useRef(null);
 
   // Tool 3: Word to PDF
   const [wordFiles, setWordFiles] = useState([]);
@@ -146,25 +146,130 @@ function Herramientas() {
   };
 
   // ─── Tool 2: Organize PDFs ───
-  const handleTextareaChange = (value) => {
-    setTextareaValue(value);
-    const numbers = value.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-    setDocumentNumbers(numbers);
+  const DNI_HEADERS = ['DNI', 'N° DOC', 'DOCUMENTO', 'NRO DOC', 'NUM DOC', 'N° DOCUMENTO', 'NRO DOCUMENTO'];
+
+  const extractDnisFromExcel = async (file) => {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    let bestMatch = null;
+
+    for (const sheetName of workbook.SheetNames) {
+      if (bestMatch) break;
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      if (jsonData.length < 2) continue;
+
+      for (let headerRowIdx = 0; headerRowIdx < Math.min(30, jsonData.length); headerRowIdx++) {
+        if (bestMatch) break;
+        const row = jsonData[headerRowIdx];
+        if (!row || row.length === 0) continue;
+
+        let dniColIndex = -1;
+        for (let col = 0; col < row.length; col++) {
+          const cellVal = String(row[col] ?? '').trim().toUpperCase();
+          if (DNI_HEADERS.includes(cellVal)) { dniColIndex = col; break; }
+        }
+        if (dniColIndex < 0) continue;
+
+        const candidateDnis = [];
+        for (let r = headerRowIdx + 1; r < jsonData.length; r++) {
+          const val = jsonData[r]?.[dniColIndex];
+          const strVal = String(val ?? '').trim();
+          if (!strVal || strVal.length === 0 || /^TOTAL/i.test(strVal) || /^BAJA/i.test(strVal)) break;
+          const cleanVal = strVal.replace(/[^0-9]/g, '');
+          if (cleanVal.length >= 6 && cleanVal.length <= 12) candidateDnis.push(cleanVal);
+        }
+
+        if (candidateDnis.length > 0 && (!bestMatch || candidateDnis.length > bestMatch.dnis.length)) {
+          bestMatch = { sheet: sheetName, column: String(row[dniColIndex]), dnis: candidateDnis };
+        }
+      }
+    }
+    return bestMatch;
   };
 
-  const handleExcelUpload = async (file) => {
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-      const numbers = jsonData.flat().map(cell => String(cell).trim()).filter(val => val.length > 0 && val !== 'undefined');
-      setDocumentNumbers(numbers);
-      toast.success(`${numbers.length} números de documento cargados desde Excel`);
-    } catch (error) {
-      console.error('Error al leer Excel:', error);
-      await Swal.fire({ title: 'Error al leer Excel', text: 'No se pudo leer el archivo Excel. Verifica que sea un archivo válido.', icon: 'error', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+  const getPageCount = async (file) => {
+    const isWord = file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc');
+    let pdfBytes;
+    if (isWord) {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await fetch('/api/convert-word', { method: 'POST', body: formData });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Error al convertir Word');
+      }
+      const blob = await response.blob();
+      pdfBytes = await blob.arrayBuffer();
+    } else {
+      pdfBytes = await file.arrayBuffer();
     }
+    const doc = await PDFDocument.load(pdfBytes);
+    return { pageCount: doc.getPageCount(), pdfBytes };
+  };
+
+  const handleExcelUpload = async (files) => {
+    const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
+    const infos = sorted.map(f => ({ file: f, dnis: [], sheetName: '', processing: true }));
+    setExcelInfos(infos);
+    toast.success(`${files.length} Excel(s) cargados`);
+    for (let i = 0; i < sorted.length; i++) {
+      try {
+        const result = await extractDnisFromExcel(sorted[i]);
+        setExcelInfos(prev => prev.map((item, idx) => idx === i ? { ...item, dnis: result ? result.dnis : [], sheetName: result ? result.sheet : '', processing: false } : item));
+      } catch {
+        setExcelInfos(prev => prev.map((item, idx) => idx === i ? { ...item, processing: false } : item));
+      }
+    }
+  };
+
+  const handleDocUpload = async (files) => {
+    const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
+    const infos = sorted.map(f => ({ file: f, pageCount: null, pdfBytes: null, processing: true }));
+    setDocInfos(infos);
+    toast.success(`${files.length} documento(s) cargados`);
+    for (let i = 0; i < sorted.length; i++) {
+      try {
+        const { pageCount, pdfBytes } = await getPageCount(sorted[i]);
+        setDocInfos(prev => prev.map((item, idx) => idx === i ? { ...item, pageCount, pdfBytes, processing: false } : item));
+      } catch {
+        setDocInfos(prev => prev.map((item, idx) => idx === i ? { ...item, pageCount: -1, processing: false } : item));
+        toast.error(`Error: ${sorted[i].name}`);
+      }
+    }
+  };
+
+  const handleDragStart = (index) => {
+    setDragIdx(index);
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    if (dragOverIdx !== index) setDragOverIdx(index);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === dropIndex) { setDragIdx(null); setDragOverIdx(null); return; }
+    setDocInfos(prev => {
+      const arr = [...prev];
+      [arr[dragIdx], arr[dropIndex]] = [arr[dropIndex], arr[dragIdx]];
+      return arr;
+    });
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleDragEnd = () => {
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleClearAll = () => {
+    setExcelInfos([]);
+    setDocInfos([]);
+    if (excelInputRef.current) excelInputRef.current.value = '';
+    if (docInputRef.current) docInputRef.current.value = '';
   };
 
   const handleOrganizePDFs = async () => {
@@ -172,43 +277,77 @@ function Herramientas() {
       await Swal.fire({ title: 'Correlativo requerido', text: 'Por favor ingresa el número de correlativo', icon: 'warning', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
       return;
     }
-    if (documentNumbers.length === 0) {
-      await Swal.fire({ title: 'Números de documento requeridos', text: 'Por favor ingresa los números de documento (vía textarea o Excel)', icon: 'warning', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+    if (excelInfos.length === 0 || docInfos.length === 0) {
+      await Swal.fire({ title: 'Archivos requeridos', text: 'Sube los archivos Excel y Word/PDF', icon: 'warning', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
       return;
     }
-    if (!pdfFile) {
-      await Swal.fire({ title: 'PDF requerido', text: 'Por favor selecciona el archivo PDF con las páginas', icon: 'warning', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+    if (excelInfos.length !== docInfos.length) {
+      await Swal.fire({ title: 'Cantidades diferentes', text: `Tienes ${excelInfos.length} Excel(s) y ${docInfos.length} documento(s)`, icon: 'error', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
       return;
     }
+    const stillProcessing = excelInfos.some(e => e.processing) || docInfos.some(d => d.processing);
+    if (stillProcessing) {
+      await Swal.fire({ title: 'Espera', text: 'Algunos archivos aún se están procesando.', icon: 'info', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+      return;
+    }
+    const mismatches = [];
+    for (let i = 0; i < excelInfos.length; i++) {
+      const dniCount = excelInfos[i].dnis.length;
+      const pageCount = docInfos[i].pageCount;
+      if (pageCount > 0 && dniCount !== pageCount) {
+        mismatches.push(`${docInfos[i].file.name}: ${pageCount} págs vs ${dniCount} DNIs`);
+      }
+    }
+    if (mismatches.length > 0) {
+      const details = mismatches.join('<br>');
+      await Swal.fire({ title: 'Cantidades no coinciden', html: `<p>Reordena los documentos para que coincidan:</p><p style="margin-top:8px;color:#dc2626;font-weight:600">${details}</p>`, icon: 'error', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+      return;
+    }
+
     try {
       setIsOrganizing(true);
       setOrganizeProgress(0);
-      const pdfBytes = await pdfFile.arrayBuffer();
-      const srcDoc = await PDFDocument.load(pdfBytes);
-      const pageCount = srcDoc.getPageCount();
-      if (pageCount !== documentNumbers.length) {
-        await Swal.fire({
-          title: 'Cantidades no coinciden',
-          html: `<p>El PDF tiene <strong>${pageCount}</strong> páginas pero se ingresaron <strong>${documentNumbers.length}</strong> números de documento.</p><p style="margin-top: 8px;">Ambas cantidades deben ser iguales.</p>`,
-          icon: 'error', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido'
-        });
-        setIsOrganizing(false);
-        return;
-      }
-      setOrganizeTotalPDFs(pageCount);
+      const totalPages = docInfos.reduce((sum, d) => sum + (d.pageCount || 0), 0);
+      setOrganizeTotalPDFs(totalPages);
+
       const outputZip = new JSZip();
-      for (let i = 0; i < pageCount; i++) {
-        const newDoc = await PDFDocument.create();
-        const [copiedPage] = await newDoc.copyPages(srcDoc, [i]);
-        newDoc.addPage(copiedPage);
-        const singlePdfBytes = await newDoc.save();
-        const newName = `${correlativo.trim()}_${documentNumbers[i]}.pdf`;
-        const folderStart = Math.floor(i / 50) * 50 + 1;
-        const folderEnd = folderStart + 49;
-        const folderName = `${String(folderStart).padStart(3, '0')}-${String(folderEnd).padStart(3, '0')}`;
-        outputZip.file(`${folderName}/${newName}`, singlePdfBytes);
-        setOrganizeProgress(i + 1);
+      let globalProgress = 0;
+
+      for (let p = 0; p < excelInfos.length; p++) {
+        const excel = excelInfos[p];
+        const doc = docInfos[p];
+        let pdfBytes = doc.pdfBytes;
+        if (!pdfBytes) {
+          const result = await getPageCount(doc.file);
+          pdfBytes = result.pdfBytes;
+        }
+
+        const srcDoc = await PDFDocument.load(pdfBytes);
+        const pageCount = srcDoc.getPageCount();
+        const folderPrefix = excelInfos.length > 1 ? doc.file.name.replace(/\.(docx?|pdf)$/i, '') + '/' : '';
+
+        const seenDnis = {};
+        for (let i = 0; i < pageCount; i++) {
+          const newDoc = await PDFDocument.create();
+          const [copiedPage] = await newDoc.copyPages(srcDoc, [i]);
+          newDoc.addPage(copiedPage);
+          const singlePdfBytes = await newDoc.save();
+          const dni = excel.dnis[i];
+          const baseName = `${correlativo.trim()}_${dni}.pdf`;
+          seenDnis[dni] = (seenDnis[dni] || 0) + 1;
+          if (seenDnis[dni] > 1) {
+            outputZip.file(`${folderPrefix}DUPLICADOS/${baseName.replace('.pdf', `_${seenDnis[dni]}.pdf`)}`, singlePdfBytes);
+          } else {
+            const folderStart = Math.floor(i / 50) * 50 + 1;
+            const folderEnd = folderStart + 49;
+            const subFolder = `${String(folderStart).padStart(3, '0')}-${String(folderEnd).padStart(3, '0')}`;
+            outputZip.file(`${folderPrefix}${subFolder}/${baseName}`, singlePdfBytes);
+          }
+          globalProgress++;
+          setOrganizeProgress(globalProgress);
+        }
       }
+
       const outputBlob = await outputZip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
       const url = URL.createObjectURL(outputBlob);
       const a = document.createElement('a');
@@ -218,16 +357,16 @@ function Herramientas() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+
       setIsOrganizing(false);
       setCorrelativo('');
-      setDocumentNumbers([]);
-      setTextareaValue('');
-      setPdfFile(null);
+      setExcelInfos([]);
+      setDocInfos([]);
       setOrganizeProgress(0);
       setOrganizeTotalPDFs(0);
-      if (pdfInputRef.current) pdfInputRef.current.value = '';
       if (excelInputRef.current) excelInputRef.current.value = '';
-      toast.success(`¡${pageCount} PDFs organizados exitosamente!`, { duration: 4000 });
+      if (docInputRef.current) docInputRef.current.value = '';
+      toast.success(`¡${totalPages} PDFs organizados exitosamente!`, { duration: 4000 });
     } catch (error) {
       console.error('Error al organizar PDFs:', error);
       setIsOrganizing(false);
@@ -457,84 +596,195 @@ function Herramientas() {
   // ─── Tool 2 View: Organize PDFs ───
   const renderOrganizeTool = () => (
     <div className="flex-1 flex items-start justify-center p-8">
-      <div className="max-w-3xl w-full">
+      <div className="max-w-4xl w-full">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-200">
           <div className="bg-gradient-to-r from-violet-600 to-violet-700 px-6 py-4">
             <div className="flex items-center gap-3">
               <div className="bg-white bg-opacity-20 p-2 rounded-lg"><FolderOpen className="w-6 h-6 text-white" /></div>
               <div>
                 <h2 className="text-xl font-bold text-white">Organizador de PDFs en Carpetas</h2>
-                <p className="text-violet-100 text-sm">Renombra y organiza PDFs en carpetas de 50</p>
+                <p className="text-violet-100 text-sm">Sube todos los Excel y Word/PDF de una vez</p>
               </div>
             </div>
           </div>
           <div className="p-6 space-y-5">
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">¿Para qué sirve esta herramienta?</h3>
+              <h3 className="font-semibold text-blue-900 mb-2">¿Cómo funciona?</h3>
               <ul className="text-sm text-blue-800 space-y-1 ml-5 list-disc">
-                <li>Sube un PDF con varias páginas (cada página = un certificado)</li>
-                <li>Divide cada página en un PDF individual</li>
-                <li>Renombra cada PDF como <code className="bg-blue-100 px-1 rounded">correlativo_numDocumento.pdf</code></li>
-                <li>Organiza los PDFs en carpetas de 50 (001-050, 051-100, etc.)</li>
-                <li>Descarga un ZIP con toda la estructura organizada</li>
+                <li><strong>Paso 1:</strong> Sube todos los archivos Excel (se emparejan por orden alfabético)</li>
+                <li><strong>Paso 2:</strong> Sube todos los Word/PDF (misma cantidad que los Excel)</li>
+                <li><strong>Paso 3:</strong> Click en "Emparejar" para detectar DNIs y contar páginas</li>
+                <li>Cada página se renombra como <code className="bg-blue-100 px-1 rounded">correlativo_DNI.pdf</code></li>
+                <li>Se organizan en carpetas de 50 (001-050, 051-100, etc.)</li>
               </ul>
             </div>
 
+            {/* Correlativo */}
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Correlativo</label>
-              <input type="text" value={correlativo} onChange={(e) => setCorrelativo(e.target.value)} placeholder="Ej: 29" disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
+              <input type="text" value={correlativo} onChange={(e) => setCorrelativo(e.target.value)} placeholder="Ej: 29" disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Números de documento</label>
-              <div className="flex gap-2 mb-3">
-                <button onClick={() => setInputMethod('textarea')} disabled={isOrganizing} className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${inputMethod === 'textarea' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} disabled:opacity-50 disabled:cursor-not-allowed`}>Escribir / Pegar</button>
-                <button onClick={() => setInputMethod('excel')} disabled={isOrganizing} className={`flex-1 py-2 px-4 rounded-lg text-sm font-semibold transition-all ${inputMethod === 'excel' ? 'bg-purple-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'} disabled:opacity-50 disabled:cursor-not-allowed`}>Subir Excel</button>
-              </div>
-              {inputMethod === 'textarea' ? (
-                <textarea value={textareaValue} onChange={(e) => handleTextareaChange(e.target.value)} placeholder={"Pega un número de documento por línea\nEj:\n12345678\n87654321\n11223344"} rows={6} disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all resize-y font-mono text-sm text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
-              ) : (
-                <div onClick={() => !isOrganizing && excelInputRef.current?.click()} className={`border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer transition-all ${isOrganizing ? 'opacity-50 cursor-not-allowed' : 'hover:border-purple-500 hover:bg-purple-50'}`}>
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 font-medium">Haz clic para subir archivo Excel</p>
-                  <p className="text-xs text-gray-400 mt-1">.xlsx o .xls con una columna de números de documento</p>
-                  <input ref={excelInputRef} type="file" accept=".xlsx,.xls" onChange={(e) => { const file = e.target.files[0]; if (file) handleExcelUpload(file); }} className="hidden" />
-                </div>
-              )}
-              {documentNumbers.length > 0 && (
-                <p className="text-sm text-purple-600 font-semibold mt-2">{documentNumbers.length} números de documento ingresados</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Archivo PDF (cada página = un certificado)</label>
-              {!pdfFile ? (
-                <div onClick={() => !isOrganizing && pdfInputRef.current?.click()} className={`border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all ${isOrganizing ? 'opacity-50 cursor-not-allowed' : 'hover:border-purple-500 hover:bg-purple-50 cursor-pointer'}`}>
-                  <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3"><Upload className="w-6 h-6 text-purple-600" /></div>
-                  <p className="text-sm text-gray-700 font-semibold mb-1">Selecciona el archivo PDF</p>
-                  <p className="text-xs text-gray-400">Cada página se convertirá en un PDF individual</p>
-                  <input ref={pdfInputRef} type="file" accept=".pdf" onChange={(e) => { const file = e.target.files[0]; if (file) { setPdfFile(file); toast.success('PDF cargado correctamente'); } }} className="hidden" />
-                </div>
-              ) : (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-green-100 p-2 rounded-lg"><FileCheck className="w-5 h-5 text-green-600" /></div>
-                      <div>
-                        <p className="font-semibold text-green-900">{pdfFile.name}</p>
-                        <p className="text-sm text-green-700">{(pdfFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                      </div>
-                    </div>
-                    <button onClick={() => { setPdfFile(null); if (pdfInputRef.current) pdfInputRef.current.value = ''; }} disabled={isOrganizing} className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Cambiar archivo</button>
+            {/* Subida masiva */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Excel files */}
+              <div className="border border-violet-200 rounded-xl p-4 bg-violet-50/50">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Archivos Excel con DNIs</label>
+                {excelInfos.length === 0 ? (
+                  <div onClick={() => !isOrganizing && excelInputRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-violet-400 hover:bg-white transition-all">
+                    <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 font-medium">Seleccionar Excel(s)</p>
+                    <p className="text-xs text-gray-400 mt-1">Puedes seleccionar varios a la vez</p>
+                    <input ref={excelInputRef} type="file" accept=".xlsx,.xls" multiple onChange={(e) => { const files = Array.from(e.target.files); if (files.length > 0) handleExcelUpload(files); }} className="hidden" />
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div>
+                    <div className="space-y-1.5 mb-2">
+                      {excelInfos.map((info, i) => (
+                        <div key={i} className="bg-white rounded-lg px-3 py-2 border border-violet-200 text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="bg-violet-100 text-violet-700 font-bold px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">{i + 1}</span>
+                            <span className="text-gray-700 truncate font-medium">{info.file.name}</span>
+                          </div>
+                          <div className="ml-6 mt-0.5">
+                            {info.processing ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" />Leyendo DNIs...</span>
+                            ) : (
+                              <span className="text-violet-700 font-semibold">{info.dnis.length} DNIs{info.sheetName ? ` (${info.sheetName})` : ''}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-violet-700 font-semibold">{excelInfos.length} archivo(s)</span>
+                      <button onClick={() => { setExcelInfos([]); if (excelInputRef.current) excelInputRef.current.value = ''; }} disabled={isOrganizing} className="text-xs text-red-500 hover:text-red-700 font-semibold disabled:opacity-50">Quitar todos</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Doc files */}
+              <div className="border border-violet-200 rounded-xl p-4 bg-violet-50/50">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Archivos Word / PDF</label>
+                {docInfos.length === 0 ? (
+                  <div onClick={() => !isOrganizing && docInputRef.current?.click()} className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-violet-400 hover:bg-white transition-all">
+                    <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                    <p className="text-sm text-gray-600 font-medium">Seleccionar Word/PDF(s)</p>
+                    <p className="text-xs text-gray-400 mt-1">Puedes seleccionar varios a la vez</p>
+                    <input ref={docInputRef} type="file" accept=".pdf,.docx,.doc" multiple onChange={(e) => { const files = Array.from(e.target.files); if (files.length > 0) handleDocUpload(files); }} className="hidden" />
+                  </div>
+                ) : (
+                  <div>
+                    <div className="space-y-1.5 mb-2">
+                      {docInfos.map((info, i) => (
+                        <div
+                          key={info.file.name + i}
+                          draggable={!isOrganizing}
+                          onDragStart={() => handleDragStart(i)}
+                          onDragOver={(e) => handleDragOver(e, i)}
+                          onDrop={(e) => handleDrop(e, i)}
+                          onDragEnd={handleDragEnd}
+                          className={`rounded-lg px-3 py-2 border text-xs transition-all select-none ${
+                            dragIdx === i ? 'opacity-40 scale-95 border-violet-400 bg-violet-100' :
+                            dragOverIdx === i && dragIdx !== null ? 'border-violet-500 bg-violet-100 shadow-md scale-[1.02]' :
+                            'bg-white border-violet-200'
+                          } ${!isOrganizing ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <GripVertical className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                            <span className="bg-violet-100 text-violet-700 font-bold px-1.5 py-0.5 rounded text-[10px] flex-shrink-0">{i + 1}</span>
+                            <span className="text-gray-700 truncate font-medium">{info.file.name}</span>
+                          </div>
+                          <div className="ml-10 mt-0.5">
+                            {info.processing ? (
+                              <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" />Contando páginas...</span>
+                            ) : info.pageCount === -1 ? (
+                              <span className="text-red-600 font-semibold">Error</span>
+                            ) : (
+                              <span className="text-violet-700 font-semibold">{info.pageCount} página{info.pageCount !== 1 ? 's' : ''}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400 mb-1.5 text-center">Arrastra para reordenar</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-violet-700 font-semibold">{docInfos.length} archivo(s)</span>
+                      <button onClick={() => { setDocInfos([]); if (docInputRef.current) docInputRef.current.value = ''; }} disabled={isOrganizing} className="text-xs text-red-500 hover:text-red-700 font-semibold disabled:opacity-50">Quitar todos</button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Cantidad mismatch warning */}
+            {excelInfos.length > 0 && docInfos.length > 0 && excelInfos.length !== docInfos.length && (
+              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-sm text-red-700 font-semibold text-center">
+                Cantidades diferentes: {excelInfos.length} Excel(s) vs {docInfos.length} documento(s)
+              </div>
+            )}
+
+            {/* Vista previa de emparejamiento */}
+            {excelInfos.length > 0 && docInfos.length > 0 && excelInfos.length === docInfos.length && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-gray-700">Emparejamiento ({excelInfos.length} pares)</h3>
+                  <button onClick={handleClearAll} disabled={isOrganizing} className="text-xs text-red-500 hover:text-red-700 font-semibold disabled:opacity-50">Limpiar todo</button>
+                </div>
+                <div className="space-y-2">
+                  {excelInfos.map((excel, idx) => {
+                    const doc = docInfos[idx];
+                    const dniCount = excel.dnis.length;
+                    const pageCount = doc?.pageCount;
+                    const bothReady = !excel.processing && !doc?.processing && pageCount > 0 && dniCount > 0;
+                    const match = bothReady && dniCount === pageCount;
+                    const mismatch = bothReady && dniCount !== pageCount;
+                    return (
+                      <div key={idx} className={`border rounded-xl p-3 transition-colors ${mismatch ? 'border-red-300 bg-red-50' : match ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50'}`}>
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-500 font-medium mb-0.5">Excel</p>
+                            <p className="text-sm font-semibold text-gray-800 truncate">{excel.file.name}</p>
+                            <p className="text-xs mt-0.5">
+                              {excel.processing ? (
+                                <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" />Leyendo...</span>
+                              ) : (
+                                <span className="text-violet-700 font-semibold">{dniCount} DNIs</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-center px-2">
+                            <span className={`text-lg font-bold ${match ? 'text-green-500' : mismatch ? 'text-red-500' : 'text-gray-300'}`}>
+                              {match ? '=' : mismatch ? '≠' : '↔'}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-500 font-medium mb-0.5">Documento</p>
+                            <p className="text-sm font-semibold text-gray-800 truncate">{doc?.file.name}</p>
+                            <p className="text-xs mt-0.5">
+                              {doc?.processing ? (
+                                <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" />Contando...</span>
+                              ) : pageCount === -1 ? (
+                                <span className="text-red-600 font-semibold">Error</span>
+                              ) : pageCount ? (
+                                <span className="text-violet-700 font-semibold">{pageCount} página{pageCount !== 1 ? 's' : ''}</span>
+                              ) : null}
+                            </p>
+                          </div>
+                        </div>
+                        {mismatch && <p className="text-xs text-red-600 font-semibold mt-2 text-center">No coinciden: {dniCount} DNIs vs {pageCount} páginas — mueve el documento con las flechas</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {isOrganizing && <ProgressBar current={organizeProgress} total={organizeTotalPDFs} label="Organizando" />}
 
-            <button onClick={handleOrganizePDFs} disabled={isOrganizing} className="w-full bg-gradient-to-r from-violet-600 to-violet-700 text-white px-8 py-4 rounded-xl hover:from-violet-700 hover:to-violet-800 transition-all font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3">
-              {isOrganizing ? (<><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>Organizando...</>) : (<><Download className="w-6 h-6" />Organizar y Descargar</>)}
+            <button onClick={handleOrganizePDFs} disabled={isOrganizing || excelInfos.length === 0 || docInfos.length === 0 || excelInfos.length !== docInfos.length || excelInfos.some(e => e.processing) || docInfos.some(d => d.processing)} className="w-full bg-gradient-to-r from-violet-600 to-violet-700 text-white px-8 py-4 rounded-xl hover:from-violet-700 hover:to-violet-800 transition-all font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3">
+              {isOrganizing ? (<><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>Organizando...</>) : (<><Download className="w-6 h-6" />Organizar y Descargar ({excelInfos.reduce((s, e) => s + e.dnis.length, 0)} PDFs)</>)}
             </button>
           </div>
         </div>
