@@ -21,6 +21,50 @@ async function cleanFile(filePath) {
   } catch {}
 }
 
+// Busca LibreOffice en rutas comunes de Windows y Linux
+async function findLibreOffice() {
+  const candidates = [
+    'soffice',
+    'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+    'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+    '/usr/bin/soffice',
+    '/usr/bin/libreoffice',
+  ];
+  for (const cmd of candidates) {
+    try {
+      await execAsync(`"${cmd}" --version`, { timeout: 5000 });
+      return cmd;
+    } catch {}
+  }
+  return null;
+}
+
+async function findPython() {
+  const candidates = ['python', 'python3', 'py'];
+  for (const cmd of candidates) {
+    try {
+      await execAsync(`${cmd} --version`, { timeout: 5000 });
+      return cmd;
+    } catch {}
+  }
+  return null;
+}
+
+// Método 1: LibreOffice (gratuito, no necesita Word)
+async function convertWithLibreOffice(soffice, inputPath, outputDir) {
+  await execAsync(`"${soffice}" --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`, {
+    timeout: 120000,
+  });
+}
+
+// Método 2: Python docx2pdf (necesita Microsoft Word)
+async function convertWithDocx2pdf(pythonCmd, inputPath, outputPath) {
+  const escapedInput = inputPath.replace(/\\/g, '\\\\');
+  const escapedOutput = outputPath.replace(/\\/g, '\\\\');
+  const script = `from docx2pdf import convert; convert(r\\"${escapedInput}\\", r\\"${escapedOutput}\\")`;
+  await execAsync(`${pythonCmd} -c "${script}"`, { timeout: 120000 });
+}
+
 export async function POST(request) {
   const timestamp = Date.now();
   let inputPath = '';
@@ -44,23 +88,51 @@ export async function POST(request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(inputPath, buffer);
 
-    const pythonScript = `
-import sys
-from docx2pdf import convert
-convert(r"${inputPath.replace(/\\/g, '\\\\')}", r"${outputPath.replace(/\\/g, '\\\\')}")
-    `.trim();
+    let converted = false;
 
-    await execAsync(`python -c "${pythonScript.replace(/"/g, '\\"').replace(/\n/g, ';')}"`, {
-      timeout: 60000,
-    });
+    // Intentar con LibreOffice primero (no necesita Word)
+    const soffice = await findLibreOffice();
+    if (soffice) {
+      try {
+        await convertWithLibreOffice(soffice, inputPath, TEMP_DIR);
+        // LibreOffice genera el PDF con el nombre original (sin timestamp prefix a veces)
+        // Buscar el PDF generado
+        const libreOutputName = `${timestamp}_${baseName}.pdf`;
+        const libreOutputPath = path.join(TEMP_DIR, libreOutputName);
+        if (existsSync(libreOutputPath)) {
+          outputPath = libreOutputPath;
+          converted = true;
+        }
+      } catch (e) {
+        console.warn('LibreOffice falló, intentando con docx2pdf...', e.message);
+      }
+    }
 
-    if (!existsSync(outputPath)) {
-      throw new Error('La conversión no generó el archivo PDF');
+    // Si LibreOffice no funcionó, intentar con Python + docx2pdf (necesita Word)
+    if (!converted) {
+      const pythonCmd = await findPython();
+      if (pythonCmd) {
+        try {
+          await convertWithDocx2pdf(pythonCmd, inputPath, outputPath);
+          if (existsSync(outputPath)) {
+            converted = true;
+          }
+        } catch (e) {
+          console.warn('docx2pdf falló:', e.message);
+        }
+      }
+    }
+
+    if (!converted || !existsSync(outputPath)) {
+      throw new Error(
+        'No se pudo convertir. Se necesita LibreOffice o Microsoft Word instalado en el servidor. ' +
+        'Instala LibreOffice (gratis): https://www.libreoffice.org/download/ ' +
+        'o instala docx2pdf: pip install docx2pdf (requiere Word).'
+      );
     }
 
     const pdfBuffer = await readFile(outputPath);
 
-    // Limpiar archivos temporales
     await cleanFile(inputPath);
     await cleanFile(outputPath);
 
@@ -74,9 +146,6 @@ convert(r"${inputPath.replace(/\\/g, '\\\\')}", r"${outputPath.replace(/\\/g, '\
     console.error('Error en conversión:', error);
     await cleanFile(inputPath);
     await cleanFile(outputPath);
-    return NextResponse.json(
-      { error: error.message || 'Error al convertir el archivo' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
