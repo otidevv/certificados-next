@@ -9,6 +9,11 @@ const execAsync = promisify(exec);
 
 const TEMP_DIR = path.join(process.cwd(), 'tmp-conversions');
 
+const LIBREOFFICE_PATHS = [
+  'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
+  'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
+];
+
 async function ensureTempDir() {
   if (!existsSync(TEMP_DIR)) {
     await mkdir(TEMP_DIR, { recursive: true });
@@ -21,48 +26,11 @@ async function cleanFile(filePath) {
   } catch {}
 }
 
-// Busca LibreOffice en rutas comunes de Windows y Linux
-async function findLibreOffice() {
-  const candidates = [
-    'soffice',
-    'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-    'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
-    '/usr/bin/soffice',
-    '/usr/bin/libreoffice',
-  ];
-  for (const cmd of candidates) {
-    try {
-      await execAsync(`"${cmd}" --version`, { timeout: 5000 });
-      return cmd;
-    } catch {}
+function findLibreOffice() {
+  for (const p of LIBREOFFICE_PATHS) {
+    if (existsSync(p)) return p;
   }
   return null;
-}
-
-async function findPython() {
-  const candidates = ['python', 'python3', 'py'];
-  for (const cmd of candidates) {
-    try {
-      await execAsync(`${cmd} --version`, { timeout: 5000 });
-      return cmd;
-    } catch {}
-  }
-  return null;
-}
-
-// Método 1: LibreOffice (gratuito, no necesita Word)
-async function convertWithLibreOffice(soffice, inputPath, outputDir) {
-  await execAsync(`"${soffice}" --headless --convert-to pdf --outdir "${outputDir}" "${inputPath}"`, {
-    timeout: 120000,
-  });
-}
-
-// Método 2: Python docx2pdf (necesita Microsoft Word)
-async function convertWithDocx2pdf(pythonCmd, inputPath, outputPath) {
-  const escapedInput = inputPath.replace(/\\/g, '\\\\');
-  const escapedOutput = outputPath.replace(/\\/g, '\\\\');
-  const script = `from docx2pdf import convert; convert(r\\"${escapedInput}\\", r\\"${escapedOutput}\\")`;
-  await execAsync(`${pythonCmd} -c "${script}"`, { timeout: 120000 });
 }
 
 export async function POST(request) {
@@ -88,47 +56,20 @@ export async function POST(request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await writeFile(inputPath, buffer);
 
-    let converted = false;
-
-    // Intentar con LibreOffice primero (no necesita Word)
-    const soffice = await findLibreOffice();
-    if (soffice) {
-      try {
-        await convertWithLibreOffice(soffice, inputPath, TEMP_DIR);
-        // LibreOffice genera el PDF con el nombre original (sin timestamp prefix a veces)
-        // Buscar el PDF generado
-        const libreOutputName = `${timestamp}_${baseName}.pdf`;
-        const libreOutputPath = path.join(TEMP_DIR, libreOutputName);
-        if (existsSync(libreOutputPath)) {
-          outputPath = libreOutputPath;
-          converted = true;
-        }
-      } catch (e) {
-        console.warn('LibreOffice falló, intentando con docx2pdf...', e.message);
-      }
+    const soffice = findLibreOffice();
+    if (!soffice) {
+      throw new Error('LibreOffice no encontrado. Instálalo desde https://www.libreoffice.org/download/');
     }
 
-    // Si LibreOffice no funcionó, intentar con Python + docx2pdf (necesita Word)
-    if (!converted) {
-      const pythonCmd = await findPython();
-      if (pythonCmd) {
-        try {
-          await convertWithDocx2pdf(pythonCmd, inputPath, outputPath);
-          if (existsSync(outputPath)) {
-            converted = true;
-          }
-        } catch (e) {
-          console.warn('docx2pdf falló:', e.message);
-        }
-      }
-    }
+    const cmd = `"${soffice}" --headless --norestore --nolockcheck --convert-to pdf --outdir "${TEMP_DIR}" "${inputPath}"`;
+    console.log('Ejecutando:', cmd);
 
-    if (!converted || !existsSync(outputPath)) {
-      throw new Error(
-        'No se pudo convertir. Se necesita LibreOffice o Microsoft Word instalado en el servidor. ' +
-        'Instala LibreOffice (gratis): https://www.libreoffice.org/download/ ' +
-        'o instala docx2pdf: pip install docx2pdf (requiere Word).'
-      );
+    const { stdout, stderr } = await execAsync(cmd, { timeout: 120000 });
+    console.log('stdout:', stdout);
+    if (stderr) console.log('stderr:', stderr);
+
+    if (!existsSync(outputPath)) {
+      throw new Error(`LibreOffice no generó el PDF. stdout: ${stdout}, stderr: ${stderr || 'ninguno'}`);
     }
 
     const pdfBuffer = await readFile(outputPath);
