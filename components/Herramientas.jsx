@@ -331,7 +331,7 @@ function Herramientas() {
           const newDoc = await PDFDocument.create();
           const [copiedPage] = await newDoc.copyPages(srcDoc, [i]);
           newDoc.addPage(copiedPage);
-          const singlePdfBytes = await newDoc.save();
+          const singlePdfBytes = await newDoc.save({ useObjectStreams: false, addDefaultPage: false, objectsPerTick: 50 });
           const dni = excel.dnis[i];
           const baseName = `${correlativo.trim()}_${dni}.pdf`;
           seenDnis[dni] = (seenDnis[dni] || 0) + 1;
