@@ -14,7 +14,8 @@
       "Bash(\"C:\\\\Program Files\\\\LibreOffice\\\\program\\\\soffice.exe\" --version)",
       "Bash(where:*)",
       "Bash(dir:*)",
-      "Bash(\"C:\\\\Program Files\\\\LibreOffice\\\\program\\\\soffice.exe\" --headless --norestore --nolockcheck --convert-to pdf --outdir \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\" \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\\\\test.txt\")"
+      "Bash(\"C:\\\\Program Files\\\\LibreOffice\\\\program\\\\soffice.exe\" --headless --norestore --nolockcheck --convert-to pdf --outdir \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\" \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\\\\test.txt\")",
+      "Bash(npx next lint:*)"
     ]
   }
 }

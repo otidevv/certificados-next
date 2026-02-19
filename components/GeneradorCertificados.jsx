@@ -50,6 +50,11 @@ function GeneradorCertificados() {
   const [newFieldStaticText, setNewFieldStaticText] = useState('');
   const [newFieldAlign, setNewFieldAlign] = useState('left');
 
+  // Estados para selección de hoja Excel
+  const [showSheetModal, setShowSheetModal] = useState(false);
+  const [availableSheets, setAvailableSheets] = useState([]);
+  const [pendingWorkbook, setPendingWorkbook] = useState(null);
+
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
   const excelInputRef = useRef(null);
@@ -196,6 +201,76 @@ function GeneradorCertificados() {
     }
   };
 
+  // Procesar una hoja específica del workbook
+  const processSheet = (workbook, sheetName) => {
+    const sheet = workbook.Sheets[sheetName];
+    const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
+
+    if (jsonData.length === 0) {
+      Swal.fire({
+        title: 'Hoja vacía',
+        text: `La hoja "${sheetName}" no contiene datos`,
+        icon: 'error',
+        confirmButtonColor: '#9333ea',
+      });
+      return;
+    }
+
+    const headers = jsonData[0];
+    const rows = jsonData.slice(1).filter(row => {
+      if (!row || row.length === 0) return false;
+      const requiredCells = row.slice(0, 4);
+      return requiredCells.some(cell =>
+        cell !== undefined && cell !== null && String(cell).trim() !== ''
+      );
+    });
+
+    const requiredColumns = ['numero_secuencial', 'numero_documento', 'nombre_completo', 'cargo'];
+    const headersTrimmed = headers.slice(0, 4).map(h => String(h).trim().toLowerCase());
+
+    const isValidFormat = requiredColumns.every((col, idx) => headersTrimmed[idx] === col);
+
+    if (!isValidFormat) {
+      Swal.fire({
+        title: 'Formato incorrecto',
+        html: `
+          <div style="text-align: left;">
+            <p style="margin-bottom: 12px;">La hoja "<strong>${sheetName}</strong>" no cumple con la normativa de certificados de la <strong>Universidad Nacional Amazónica de Madre de Dios</strong>.</p>
+            <p style="margin-bottom: 8px; font-weight: 600;">Las primeras 4 columnas deben ser:</p>
+            <ol style="margin-left: 20px; margin-bottom: 12px;">
+              <li><strong>numero_secuencial</strong></li>
+              <li><strong>numero_documento</strong></li>
+              <li><strong>nombre_completo</strong></li>
+              <li><strong>cargo</strong></li>
+            </ol>
+          </div>
+        `,
+        icon: 'error',
+        confirmButtonColor: '#9333ea',
+        width: '600px'
+      });
+
+      if (excelInputRef.current) {
+        excelInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setExcelHeaders(headers);
+    setExcelData(rows);
+    toast.success(`${rows.length} participantes cargados desde "${sheetName}"`);
+  };
+
+  // Seleccionar una hoja del modal
+  const handleSelectSheet = (sheetName) => {
+    setShowSheetModal(false);
+    if (pendingWorkbook) {
+      processSheet(pendingWorkbook, sheetName);
+      setPendingWorkbook(null);
+      setAvailableSheets([]);
+    }
+  };
+
   // Manejar carga de Excel
   const handleExcelUpload = (e) => {
     const file = e.target.files[0];
@@ -206,63 +281,25 @@ function GeneradorCertificados() {
       try {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1, blankrows: false });
 
-        if (jsonData.length === 0) {
-          Swal.fire({
-            title: 'Archivo vacío',
-            text: 'El archivo Excel no contiene datos',
-            icon: 'error',
-            confirmButtonColor: '#9333ea',
+        if (workbook.SheetNames.length > 1) {
+          // Múltiples hojas: mostrar modal para elegir
+          const sheetsInfo = workbook.SheetNames.map(name => {
+            const sheet = workbook.Sheets[name];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
+            return {
+              name,
+              rows: Math.max(0, jsonData.length - 1),
+              hasData: jsonData.length > 0,
+            };
           });
-          return;
+          setAvailableSheets(sheetsInfo);
+          setPendingWorkbook(workbook);
+          setShowSheetModal(true);
+        } else {
+          // Una sola hoja: procesar directamente
+          processSheet(workbook, workbook.SheetNames[0]);
         }
-
-        const headers = jsonData[0];
-        const rows = jsonData.slice(1).filter(row => {
-        if (!row || row.length === 0) return false;
-        // Verificar que al menos una de las 4 columnas requeridas tenga contenido real
-        const requiredCells = row.slice(0, 4);
-        return requiredCells.some(cell =>
-          cell !== undefined && cell !== null && String(cell).trim() !== ''
-        );
-      });
-
-        const requiredColumns = ['numero_secuencial', 'numero_documento', 'nombre_completo', 'cargo'];
-        const headersTrimmed = headers.slice(0, 4).map(h => String(h).trim().toLowerCase());
-
-        const isValidFormat = requiredColumns.every((col, idx) => headersTrimmed[idx] === col);
-
-        if (!isValidFormat) {
-          Swal.fire({
-            title: 'Formato incorrecto',
-            html: `
-              <div style="text-align: left;">
-                <p style="margin-bottom: 12px;">El archivo no cumple con la normativa de certificados de la <strong>Universidad Nacional Amazónica de Madre de Dios</strong>.</p>
-                <p style="margin-bottom: 8px; font-weight: 600;">Las primeras 4 columnas deben ser:</p>
-                <ol style="margin-left: 20px; margin-bottom: 12px;">
-                  <li><strong>numero_secuencial</strong></li>
-                  <li><strong>numero_documento</strong></li>
-                  <li><strong>nombre_completo</strong></li>
-                  <li><strong>cargo</strong></li>
-                </ol>
-              </div>
-            `,
-            icon: 'error',
-            confirmButtonColor: '#9333ea',
-            width: '600px'
-          });
-
-          if (excelInputRef.current) {
-            excelInputRef.current.value = '';
-          }
-          return;
-        }
-
-        setExcelHeaders(headers);
-        setExcelData(rows);
-        toast.success(`${rows.length} participantes cargados`);
       } catch (error) {
         Swal.fire({
           title: 'Error al leer Excel',
@@ -1883,6 +1920,56 @@ function GeneradorCertificados() {
               >
                 Agregar Campo
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Selección de hoja Excel */}
+      {showSheetModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-6 py-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-white">Selecciona una hoja</h3>
+              <button
+                onClick={() => {
+                  setShowSheetModal(false);
+                  setPendingWorkbook(null);
+                  setAvailableSheets([]);
+                  if (excelInputRef.current) excelInputRef.current.value = '';
+                }}
+                className="text-white hover:bg-white hover:bg-opacity-20 rounded-lg p-1 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                El archivo tiene <strong>{availableSheets.length} hojas</strong>. Selecciona cuál deseas usar:
+              </p>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {availableSheets.map((sheet, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSelectSheet(sheet.name)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-green-100 group-hover:bg-green-200 p-2 rounded-lg transition-colors">
+                        <FileSpreadsheet className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">{sheet.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {sheet.hasData ? `${sheet.rows} fila${sheet.rows !== 1 ? 's' : ''} de datos` : 'Sin datos'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
