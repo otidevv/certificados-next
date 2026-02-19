@@ -201,7 +201,7 @@ function GeneradorCertificados() {
     }
   };
 
-  // Procesar una hoja específica del workbook
+  // Procesar una hoja específica del workbook. Retorna true si fue exitoso.
   const processSheet = (workbook, sheetName) => {
     const sheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, blankrows: false });
@@ -209,11 +209,11 @@ function GeneradorCertificados() {
     if (jsonData.length === 0) {
       Swal.fire({
         title: 'Hoja vacía',
-        text: `La hoja "${sheetName}" no contiene datos`,
-        icon: 'error',
+        text: `La hoja "${sheetName}" no contiene datos. Selecciona otra hoja.`,
+        icon: 'warning',
         confirmButtonColor: '#9333ea',
       });
-      return;
+      return false;
     }
 
     const headers = jsonData[0];
@@ -235,7 +235,7 @@ function GeneradorCertificados() {
         title: 'Formato incorrecto',
         html: `
           <div style="text-align: left;">
-            <p style="margin-bottom: 12px;">La hoja "<strong>${sheetName}</strong>" no cumple con la normativa de certificados de la <strong>Universidad Nacional Amazónica de Madre de Dios</strong>.</p>
+            <p style="margin-bottom: 12px;">La hoja "<strong>${sheetName}</strong>" no cumple con el formato requerido. Selecciona otra hoja.</p>
             <p style="margin-bottom: 8px; font-weight: 600;">Las primeras 4 columnas deben ser:</p>
             <ol style="margin-left: 20px; margin-bottom: 12px;">
               <li><strong>numero_secuencial</strong></li>
@@ -245,29 +245,30 @@ function GeneradorCertificados() {
             </ol>
           </div>
         `,
-        icon: 'error',
+        icon: 'warning',
         confirmButtonColor: '#9333ea',
         width: '600px'
       });
-
-      if (excelInputRef.current) {
-        excelInputRef.current.value = '';
-      }
-      return;
+      return false;
     }
 
     setExcelHeaders(headers);
     setExcelData(rows);
     toast.success(`${rows.length} participantes cargados desde "${sheetName}"`);
+    return true;
   };
 
   // Seleccionar una hoja del modal
   const handleSelectSheet = (sheetName) => {
-    setShowSheetModal(false);
     if (pendingWorkbook) {
-      processSheet(pendingWorkbook, sheetName);
-      setPendingWorkbook(null);
-      setAvailableSheets([]);
+      const success = processSheet(pendingWorkbook, sheetName);
+      if (success) {
+        // Solo cerrar el modal si la hoja fue válida
+        setShowSheetModal(false);
+        setPendingWorkbook(null);
+        setAvailableSheets([]);
+      }
+      // Si falló, el modal sigue abierto para elegir otra hoja
     }
   };
 
@@ -278,6 +279,9 @@ function GeneradorCertificados() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
+      // Limpiar input DESPUÉS de leer, para permitir subir el mismo archivo otra vez
+      if (excelInputRef.current) excelInputRef.current.value = '';
+
       try {
         const data = new Uint8Array(event.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
