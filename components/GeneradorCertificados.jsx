@@ -844,7 +844,7 @@ function GeneradorCertificados() {
                 {session.user.name || session.user.email}
               </span>
               <button
-                onClick={() => signOut()}
+                onClick={() => signOut({ callbackUrl: window.location.origin })}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-red-50 hover:border-red-400 transition-colors text-gray-700 hover:text-red-600"
               >
                 <LogOut className="w-4 h-4" />
