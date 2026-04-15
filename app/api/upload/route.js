@@ -27,7 +27,7 @@ export async function POST(request) {
 
     await writeFile(path, buffer)
 
-    const url = `/uploads/courses/${filename}`
+    const url = `/api/files/courses/${filename}`
     return NextResponse.json({ url }, { status: 200 })
   } catch (error) {
     console.error("Upload error:", error)
