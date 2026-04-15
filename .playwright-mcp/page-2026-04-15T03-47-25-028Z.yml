@@ -1,0 +1,125 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+        - link "Ingresar" [ref=e9] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e10]
+          - text: Ingresar
+    - main [ref=e13]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - heading "Explora todos los cursos" [level=1] [ref=e18]
+            - paragraph [ref=e19]: Mostrando 1 de 1
+          - generic [ref=e20]:
+            - button "Ocultar filtros" [ref=e21]:
+              - img [ref=e22]
+              - text: Ocultar filtros
+            - combobox [ref=e23]:
+              - option "Mas recientes" [selected]
+              - option "Titulo A-Z"
+              - option "Titulo Z-A"
+              - option "Mas horas"
+        - generic [ref=e24]:
+          - complementary [ref=e25]:
+            - generic [ref=e26]:
+              - paragraph [ref=e27]: Buscador
+              - generic [ref=e28]:
+                - img [ref=e29]
+                - textbox "Buscar curso..." [ref=e32]
+            - generic [ref=e33]:
+              - paragraph [ref=e34]: Categorias
+              - generic [ref=e36] [cursor=pointer]:
+                - checkbox "Taller (1)" [ref=e37]
+                - text: Taller
+                - generic [ref=e38]: (1)
+            - generic [ref=e39]:
+              - paragraph [ref=e40]: Entidades
+              - generic [ref=e42] [cursor=pointer]:
+                - checkbox "Oficina de Tecnologias de la Informacion" [ref=e43]
+                - generic [ref=e44]: Oficina de Tecnologias de la Informacion
+          - link "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Taller CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” ● Oficina de Tecnologias de la Informacion Alberto Peña Mondragon 50h Presencial" [ref=e47] [cursor=pointer]:
+            - /url: /cursos/cmnze2dlk0000fctupydg3yrm
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - img "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [ref=e50]
+                - generic [ref=e51]: Taller
+              - generic [ref=e52]:
+                - heading "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [level=3] [ref=e53]
+                - paragraph [ref=e54]:
+                  - generic [ref=e55]: ●
+                  - text: Oficina de Tecnologias de la Informacion
+                - paragraph [ref=e56]:
+                  - img [ref=e57]
+                  - text: Alberto Peña Mondragon
+                - generic [ref=e60]:
+                  - generic [ref=e61]:
+                    - img [ref=e62]
+                    - text: 50h
+                  - generic [ref=e65]: Presencial
+    - contentinfo [ref=e66]:
+      - generic [ref=e68]:
+        - generic [ref=e69]:
+          - generic [ref=e70]:
+            - img "UNAMAD" [ref=e71]
+            - generic [ref=e72]:
+              - paragraph [ref=e73]: UNAMAD
+              - paragraph [ref=e74]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e75]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e76]:
+          - heading "Plataforma" [level=4] [ref=e77]
+          - list [ref=e78]:
+            - listitem [ref=e79]:
+              - link "Cursos disponibles" [ref=e80] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e81]:
+              - link "Generador de certificados" [ref=e82] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e83]:
+              - link "Herramientas" [ref=e84] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e85]:
+          - heading "Acceso" [level=4] [ref=e86]
+          - list [ref=e87]:
+            - listitem [ref=e88]:
+              - link "Iniciar sesion" [ref=e89] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e90]:
+              - link "Registrarse" [ref=e91] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e92]:
+              - link "Panel administrativo" [ref=e93] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e94]:
+          - heading "Contacto" [level=4] [ref=e95]
+          - list [ref=e96]:
+            - listitem [ref=e97]:
+              - img [ref=e98]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e101]:
+              - img [ref=e102]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e104]:
+              - img [ref=e105]
+              - text: (082) 571-046
+      - generic [ref=e108]:
+        - paragraph [ref=e109]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e110]:
+          - link "Facebook" [ref=e111] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e112]
+          - link "YouTube" [ref=e114] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e115]
+          - link "TikTok" [ref=e117] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e118]
+  - button "Open Next.js Dev Tools" [ref=e125] [cursor=pointer]:
+    - img [ref=e126]
+  - alert [ref=e129]

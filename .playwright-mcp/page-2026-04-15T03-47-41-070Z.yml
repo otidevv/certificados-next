@@ -1,0 +1,102 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+        - link "Ingresar" [ref=e9] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e10]
+          - text: Ingresar
+    - main [ref=e13]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - link "UNAMAD" [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img "UNAMAD" [ref=e19]
+          - heading "Iniciar Sesion" [level=1] [ref=e20]
+          - paragraph [ref=e21]: Accede a tu cuenta para inscribirte en cursos
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]: Correo electronico
+              - textbox "Correo electronico" [ref=e27]:
+                - /placeholder: tu@email.com
+            - generic [ref=e28]:
+              - generic [ref=e29]: Contraseña
+              - textbox "Contraseña" [ref=e30]:
+                - /placeholder: Tu contraseña
+            - button "Iniciar Sesion" [ref=e31]:
+              - img
+              - text: Iniciar Sesion
+          - generic [ref=e32]:
+            - text: No tienes cuenta?
+            - link "Registrate" [ref=e33] [cursor=pointer]:
+              - /url: /auth/register
+    - contentinfo [ref=e34]:
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - img "UNAMAD" [ref=e39]
+            - generic [ref=e40]:
+              - paragraph [ref=e41]: UNAMAD
+              - paragraph [ref=e42]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e43]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e44]:
+          - heading "Plataforma" [level=4] [ref=e45]
+          - list [ref=e46]:
+            - listitem [ref=e47]:
+              - link "Cursos disponibles" [ref=e48] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e49]:
+              - link "Generador de certificados" [ref=e50] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e51]:
+              - link "Herramientas" [ref=e52] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e53]:
+          - heading "Acceso" [level=4] [ref=e54]
+          - list [ref=e55]:
+            - listitem [ref=e56]:
+              - link "Iniciar sesion" [ref=e57] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e58]:
+              - link "Registrarse" [ref=e59] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e60]:
+              - link "Panel administrativo" [ref=e61] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e62]:
+          - heading "Contacto" [level=4] [ref=e63]
+          - list [ref=e64]:
+            - listitem [ref=e65]:
+              - img [ref=e66]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e69]:
+              - img [ref=e70]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e72]:
+              - img [ref=e73]
+              - text: (082) 571-046
+      - generic [ref=e76]:
+        - paragraph [ref=e77]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e78]:
+          - link "Facebook" [ref=e79] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e80]
+          - link "YouTube" [ref=e82] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e83]
+          - link "TikTok" [ref=e85] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e86]
+  - button "Open Next.js Dev Tools" [ref=e93] [cursor=pointer]:
+    - img [ref=e94]

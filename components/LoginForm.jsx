@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 
 export default function LoginForm() {
   const router = useRouter();
@@ -31,114 +35,79 @@ export default function LoginForm() {
         router.push('/');
         router.refresh();
       }
-    } catch (err) {
-      setError('Error al iniciar sesión');
+    } catch {
+      setError('Error al iniciar sesion');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Logo y título */}
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center py-10 px-4">
+      <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
-            <img
-              src="/img/logo.png"
-              alt="Logo"
-              className="h-16 w-16 mx-auto mb-4 object-contain"
-            />
+            <img src="/img/logo.png" alt="UNAMAD" className="h-16 w-16 mx-auto mb-3 object-contain" />
           </Link>
-          <h1 className="text-3xl font-bold text-gray-800">Iniciar Sesión</h1>
-          <p className="text-gray-600 mt-2">
-            Accede para guardar tus plantillas
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Iniciar Sesion</h1>
+          <p className="text-sm text-muted-foreground mt-1">Accede a tu cuenta para inscribirte en cursos</p>
         </div>
 
-        {/* Formulario */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                {error}
-              </div>
-            )}
+        <Card>
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+                  {error}
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo electronico</Label>
+                <Input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
                   required
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Contraseña
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="password">Contraseña</Label>
+                <Input
+                  id="password"
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Tu contraseña"
                   required
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-100 outline-none transition-all"
                 />
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Iniciando sesión...
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-5 h-5" />
-                  Iniciar Sesión
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
-              ¿No tienes cuenta?{' '}
-              <Link
-                href="/auth/register"
-                className="text-purple-600 font-semibold hover:text-purple-700"
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-unamad hover:bg-unamad-dark"
               >
-                Regístrate
-              </Link>
-            </p>
-          </div>
-        </div>
+                {isLoading ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Iniciando sesion...</>
+                ) : (
+                  <><LogIn className="mr-2 h-4 w-4" />Iniciar Sesion</>
+                )}
+              </Button>
+            </form>
 
-        <div className="mt-6 text-center">
-          <Link
-            href="/"
-            className="text-gray-600 hover:text-purple-600 font-medium"
-          >
-            ← Volver al generador
-          </Link>
-        </div>
+            <div className="mt-6 text-center text-sm">
+              <span className="text-muted-foreground">No tienes cuenta? </span>
+              <Link href="/auth/register" className="text-unamad font-semibold hover:text-unamad-dark">
+                Registrate
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

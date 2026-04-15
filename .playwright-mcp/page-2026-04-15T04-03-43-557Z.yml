@@ -1,0 +1,140 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+        - generic [ref=e8]:
+          - button "Menu" [active] [ref=e9]:
+            - img [ref=e143]
+          - link "Ingresar" [ref=e11] [cursor=pointer]:
+            - /url: /auth/login
+            - img [ref=e12]
+            - text: Ingresar
+      - navigation [ref=e147]:
+        - link "Inicio" [ref=e148] [cursor=pointer]:
+          - /url: /
+        - link "Capacitacion" [ref=e149] [cursor=pointer]:
+          - /url: /#cursos
+        - link "Cursos" [ref=e150] [cursor=pointer]:
+          - /url: /cursos
+        - link "Certificados" [ref=e151] [cursor=pointer]:
+          - /url: /certificados
+    - generic [ref=e15]:
+      - generic:
+        - img
+        - img
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - paragraph [ref=e20]: Centro de Capacitacion
+          - heading "CAPACITA-T" [level=1] [ref=e21]
+        - paragraph [ref=e22]: Encuentra cursos, talleres y capacitaciones para desarrollar y fortalecer tus competencias profesionales.
+        - generic [ref=e23]:
+          - button "Ver Cursos" [ref=e24]
+          - link "Registrate para inscribirte" [ref=e25] [cursor=pointer]:
+            - /url: /auth/register
+      - img [ref=e27]
+    - generic [ref=e30]:
+      - heading "Aliados" [level=2] [ref=e32]
+      - generic [ref=e36]:
+        - generic [ref=e37]:
+          - img "Google" [ref=e38]
+          - img "Universidad 2" [ref=e39]
+          - img "Universidad 3" [ref=e40]
+          - img "Universidad 4" [ref=e41]
+          - img "UNSAAC" [ref=e42]
+          - img "Turnitin" [ref=e43]
+        - generic [ref=e44]:
+          - img [ref=e45]
+          - img [ref=e46]
+          - img [ref=e47]
+          - img [ref=e48]
+          - img [ref=e49]
+          - img [ref=e50]
+    - generic [ref=e52]:
+      - generic [ref=e53]:
+        - heading "Cursos Disponibles" [level=2] [ref=e54]
+        - paragraph [ref=e55]: Selecciona un curso y completa tu inscripcion. Puedes inscribirte con o sin cuenta.
+      - link "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Taller CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Alberto Peña Mondragon 50h Presencial" [ref=e57] [cursor=pointer]:
+        - /url: /cursos/cmnze2dlk0000fctupydg3yrm
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - img "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [ref=e60]
+            - generic [ref=e61]: Taller
+          - generic [ref=e62]:
+            - heading "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [level=3] [ref=e63]
+            - paragraph [ref=e64]:
+              - img [ref=e65]
+              - text: Alberto Peña Mondragon
+            - generic [ref=e68]:
+              - generic [ref=e69]:
+                - img [ref=e70]
+                - text: 50h
+              - generic [ref=e73]: Presencial
+      - link "Explorar todos los cursos" [ref=e75] [cursor=pointer]:
+        - /url: /cursos
+        - img [ref=e76]
+        - text: Explorar todos los cursos
+    - contentinfo [ref=e79]:
+      - generic [ref=e81]:
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - img "UNAMAD" [ref=e84]
+            - generic [ref=e85]:
+              - paragraph [ref=e86]: UNAMAD
+              - paragraph [ref=e87]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e88]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e89]:
+          - heading "Plataforma" [level=4] [ref=e90]
+          - list [ref=e91]:
+            - listitem [ref=e92]:
+              - link "Cursos disponibles" [ref=e93] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e94]:
+              - link "Generador de certificados" [ref=e95] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e96]:
+              - link "Herramientas" [ref=e97] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e98]:
+          - heading "Acceso" [level=4] [ref=e99]
+          - list [ref=e100]:
+            - listitem [ref=e101]:
+              - link "Iniciar sesion" [ref=e102] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e103]:
+              - link "Registrarse" [ref=e104] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e105]:
+              - link "Panel administrativo" [ref=e106] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e107]:
+          - heading "Contacto" [level=4] [ref=e108]
+          - list [ref=e109]:
+            - listitem [ref=e110]:
+              - img [ref=e111]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e114]:
+              - img [ref=e115]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e117]:
+              - img [ref=e118]
+              - text: (082) 571-046
+      - generic [ref=e121]:
+        - paragraph [ref=e122]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e123]:
+          - link "Facebook" [ref=e124] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e125]
+          - link "YouTube" [ref=e127] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e128]
+          - link "TikTok" [ref=e130] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e131]
+  - button "Open Next.js Dev Tools" [ref=e138] [cursor=pointer]:
+    - img [ref=e139]
+  - alert [ref=e142]

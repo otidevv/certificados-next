@@ -10,13 +10,84 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
-  password  String     // Hash con bcrypt
-  name      String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  templates Template[]
+  id              String       @id @default(cuid())
+  email           String       @unique
+  password        String       // Hash con bcrypt
+  name            String?      // Nombre completo (calculado)
+  documentType    String?      // "DNI" | "CE" | "PASAPORTE"
+  documentNumber  String?
+  firstName       String?
+  paternalSurname String?
+  maternalSurname String?
+  role            String       @default("user") // "superadmin" | "admin" | "user"
+  status          String       @default("ACTIVE") // "ACTIVE" | "INACTIVE"
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  templates       Template[]
+  enrollments     Enrollment[]
+}
+
+model Sede {
+  id           String        @id @default(cuid())
+  name         String        @unique
+  createdAt    DateTime      @default(now())
+  dependencias Dependencia[]
+}
+
+model Dependencia {
+  id           String   @id @default(cuid())
+  sedeId       String
+  sede         Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+  abbreviation String
+  name         String
+  email        String?
+  status       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  courses      Course[]
+
+  @@index([sedeId])
+}
+
+model Course {
+  id          String       @id @default(cuid())
+  type        String       // "CURSO" | "CAPACITACION" | "TALLER" | "SEMINARIO" | "DIPLOMADO"
+  name        String
+  description String?
+  content     String?      // Contenido/temario del curso (texto largo)
+  imageUrl    String?      // URL de la imagen de portada
+  hours       Int
+  modality    String       // "PRESENCIAL" | "VIRTUAL" | "SEMIPRESENCIAL"
+  startDate   DateTime
+  endDate     DateTime
+  instructor  String
+  spots       Int?         // null = sin límite
+  dependenciaId String?
+  dependencia   Dependencia? @relation(fields: [dependenciaId], references: [id])
+  status        String       @default("ABIERTO") // "ABIERTO" | "CERRADO" | "EN_CURSO" | "FINALIZADO"
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  enrollments   Enrollment[]
+
+  @@index([dependenciaId])
+}
+
+model Enrollment {
+  id              String   @id @default(cuid())
+  courseId         String
+  course          Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  documentType    String   // "DNI" | "CE" | "PASAPORTE"
+  documentNumber  String
+  firstName       String
+  paternalSurname String
+  maternalSurname String
+  email           String
+  phone           String?
+  enrolledAt      DateTime @default(now())
+
+  @@unique([courseId, documentNumber])
+  @@index([courseId])
 }
 
 model Template {

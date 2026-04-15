@@ -15,7 +15,18 @@
       "Bash(where:*)",
       "Bash(dir:*)",
       "Bash(\"C:\\\\Program Files\\\\LibreOffice\\\\program\\\\soffice.exe\" --headless --norestore --nolockcheck --convert-to pdf --outdir \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\" \"C:\\\\Users\\\\PC\\\\Documents\\\\2026\\\\sistemasunamad\\\\certificados-next\\\\tmp-conversions\\\\test.txt\")",
-      "Bash(npx next lint:*)"
+      "Bash(npx next lint:*)",
+      "Bash(git -C \"D:\\\\sistemas unamad\\\\certificados-next\" log --oneline)",
+      "Bash(npx shadcn@latest add sidebar button card badge avatar dropdown-menu separator breadcrumb tooltip table input select dialog sheet tabs label checkbox skeleton scroll-area sonner chart --yes)",
+      "Bash(npx prisma:*)",
+      "Bash(node --experimental-strip-types prisma/seed-dependencias.js)",
+      "Bash(npx shadcn@latest add command popover --yes)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_resize",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "Bash(npm run:*)"
     ]
   }
 }

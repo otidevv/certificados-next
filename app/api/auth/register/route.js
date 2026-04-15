@@ -4,12 +4,28 @@ import prisma from '@/lib/prisma';
 
 export async function POST(request) {
   try {
-    const { email, password, name } = await request.json();
+    const { documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password } = await request.json();
 
     // Validar campos requeridos
-    if (!email || !password) {
+    if (!documentType || !documentNumber || !firstName || !paternalSurname || !maternalSurname || !email || !password) {
       return NextResponse.json(
-        { error: 'Email y contraseña son requeridos' },
+        { error: 'Todos los campos son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    // Validar tipo de documento
+    if (!['DNI', 'CE', 'PASAPORTE'].includes(documentType)) {
+      return NextResponse.json(
+        { error: 'Tipo de documento no válido' },
+        { status: 400 }
+      );
+    }
+
+    // Validar número de documento según tipo
+    if (documentType === 'DNI' && !/^\d{8}$/.test(documentNumber)) {
+      return NextResponse.json(
+        { error: 'DNI debe tener exactamente 8 dígitos' },
         { status: 400 }
       );
     }
@@ -31,38 +47,47 @@ export async function POST(request) {
       );
     }
 
-    // Verificar si el usuario ya existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    // Verificar si el email o documento ya existe
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { documentNumber },
+        ],
+      },
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'El email ya está registrado' },
-        { status: 400 }
-      );
+      if (existingUser.email === email) {
+        return NextResponse.json({ error: 'El email ya está registrado' }, { status: 400 });
+      }
+      return NextResponse.json({ error: 'El número de documento ya está registrado' }, { status: 400 });
     }
 
     // Hash de la contraseña
     const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Nombre completo calculado
+    const name = `${firstName} ${paternalSurname} ${maternalSurname}`;
 
     // Crear usuario
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
-        name: name || null,
+        name,
+        documentType,
+        documentNumber,
+        firstName,
+        paternalSurname,
+        maternalSurname,
       },
     });
 
     return NextResponse.json(
       {
         message: 'Usuario creado exitosamente',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
+        user: { id: user.id, email: user.email, name: user.name },
       },
       { status: 201 }
     );

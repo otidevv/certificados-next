@@ -1,0 +1,129 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+        - link "Ingresar" [ref=e9] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e10]
+          - text: Ingresar
+    - main [ref=e13]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - link "UNAMAD" [ref=e18] [cursor=pointer]:
+            - /url: /
+            - img "UNAMAD" [ref=e19]
+          - heading "Crear Cuenta" [level=1] [ref=e20]
+          - paragraph [ref=e21]: Registrate para inscribirte en cursos y capacitaciones
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - generic [ref=e25]:
+              - generic [ref=e26]:
+                - generic [ref=e27]: Tipo documento
+                - combobox [ref=e28]:
+                  - generic: Seleccionar
+                  - img
+                - combobox [ref=e29]
+              - generic [ref=e30]:
+                - generic [ref=e31]: N de documento
+                - textbox "N de documento" [ref=e32]:
+                  - /placeholder: Numero
+            - generic [ref=e33]:
+              - generic [ref=e34]: Nombres
+              - textbox "Nombres" [ref=e35]:
+                - /placeholder: Nombres completos
+            - generic [ref=e36]:
+              - generic [ref=e37]:
+                - generic [ref=e38]: Apellido paterno
+                - textbox "Apellido paterno" [ref=e39]
+              - generic [ref=e40]:
+                - generic [ref=e41]: Apellido materno
+                - textbox "Apellido materno" [ref=e42]
+            - generic [ref=e43]:
+              - generic [ref=e44]: Correo electronico
+              - textbox "Correo electronico" [ref=e45]:
+                - /placeholder: tu@email.com
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: Contraseña
+                - textbox "Contraseña" [ref=e49]:
+                  - /placeholder: Min. 6 caracteres
+              - generic [ref=e50]:
+                - generic [ref=e51]: Confirmar
+                - textbox "Confirmar" [ref=e52]:
+                  - /placeholder: Repetir contraseña
+            - button "Crear Cuenta" [ref=e53]:
+              - img
+              - text: Crear Cuenta
+          - generic [ref=e54]:
+            - text: Ya tienes cuenta?
+            - link "Inicia sesion" [ref=e55] [cursor=pointer]:
+              - /url: /auth/login
+    - contentinfo [ref=e56]:
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]:
+            - img "UNAMAD" [ref=e61]
+            - generic [ref=e62]:
+              - paragraph [ref=e63]: UNAMAD
+              - paragraph [ref=e64]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e65]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e66]:
+          - heading "Plataforma" [level=4] [ref=e67]
+          - list [ref=e68]:
+            - listitem [ref=e69]:
+              - link "Cursos disponibles" [ref=e70] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e71]:
+              - link "Generador de certificados" [ref=e72] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e73]:
+              - link "Herramientas" [ref=e74] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e75]:
+          - heading "Acceso" [level=4] [ref=e76]
+          - list [ref=e77]:
+            - listitem [ref=e78]:
+              - link "Iniciar sesion" [ref=e79] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e80]:
+              - link "Registrarse" [ref=e81] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e82]:
+              - link "Panel administrativo" [ref=e83] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e84]:
+          - heading "Contacto" [level=4] [ref=e85]
+          - list [ref=e86]:
+            - listitem [ref=e87]:
+              - img [ref=e88]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e91]:
+              - img [ref=e92]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e94]:
+              - img [ref=e95]
+              - text: (082) 571-046
+      - generic [ref=e98]:
+        - paragraph [ref=e99]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e100]:
+          - link "Facebook" [ref=e101] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e102]
+          - link "YouTube" [ref=e104] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e105]
+          - link "TikTok" [ref=e107] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e108]
+  - button "Open Next.js Dev Tools" [ref=e115] [cursor=pointer]:
+    - img [ref=e116]

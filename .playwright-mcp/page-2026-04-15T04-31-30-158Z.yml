@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4] [cursor=pointer]:
+        - img "Logo" [ref=e5]
+        - heading "Generador de Certificados" [level=1] [ref=e7]
+      - generic [ref=e8]:
+        - generic [ref=e9]:
+          - generic [ref=e10]: "1"
+          - generic [ref=e11]: "2"
+          - generic [ref=e12]: "3"
+          - generic [ref=e13]: "4"
+          - generic [ref=e14]: "5"
+        - link "Herramientas" [ref=e15] [cursor=pointer]:
+          - /url: /herramientas
+          - img [ref=e16]
+          - generic [ref=e18]: Herramientas
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: Paso 1 de 5
+        - heading "Sube tu imagen de fondo" [level=2] [ref=e25]
+        - paragraph [ref=e26]: La imagen mantendrá sus dimensiones originales
+      - generic [ref=e27] [cursor=pointer]:
+        - img [ref=e29]
+        - paragraph [ref=e32]: Haz clic para seleccionar
+        - paragraph [ref=e33]: o arrastra tu archivo aquí
+        - paragraph [ref=e34]: PNG, JPG, JPEG o PDF - Máximo 10MB
+  - button "Open Next.js Dev Tools" [ref=e40] [cursor=pointer]:
+    - img [ref=e41]
+  - alert [ref=e44]
