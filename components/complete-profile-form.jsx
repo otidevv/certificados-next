@@ -26,13 +26,13 @@ export function CompleteProfileForm({ user, redirectUrl }) {
     if (dni.length !== 8 || !/^\d{8}$/.test(dni)) return
     setIsLookingUp(true)
     try {
-      const res = await fetch(`https://apidatos.unamad.edu.pe/api/consulta/${dni}`)
+      const res = await fetch(`/api/consulta-dni?dni=${dni}`)
       if (!res.ok) throw new Error("Not found")
       const data = await res.json()
-      if (data.NOMBRES) {
-        setFirstName(data.NOMBRES)
-        setPaternalSurname(data.AP_PAT)
-        setMaternalSurname(data.AP_MAT)
+      if (data.firstName) {
+        setFirstName(data.firstName)
+        setPaternalSurname(data.paternalSurname)
+        setMaternalSurname(data.maternalSurname)
         setLookupDone(true)
       }
     } catch {
