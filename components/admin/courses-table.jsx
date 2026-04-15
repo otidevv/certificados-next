@@ -21,6 +21,7 @@ import {
   Search, MoreHorizontal, Pencil, Trash2, X, GraduationCap, Plus,
   Loader2, ArrowUp, ArrowDown, ArrowUpDown, Users, BookOpen, Clock,
 } from "lucide-react"
+import Link from "next/link"
 import { CourseDialog } from "./course-dialog"
 import { CourseDeleteDialog } from "./course-delete-dialog"
 import { DataTablePagination } from "./data-table-pagination"
@@ -271,6 +272,11 @@ export function CoursesTable({ data, dependencias = [] }) {
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                             <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/cursos/${course.id}/inscritos`}>
+                                <Users className="mr-2 h-4 w-4" />Ver inscritos ({course._count.enrollments})
+                              </Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => { setEditCourse(course); setDialogOpen(true) }}>
                               <Pencil className="mr-2 h-4 w-4" />Editar
                             </DropdownMenuItem>
