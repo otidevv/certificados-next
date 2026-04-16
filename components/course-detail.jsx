@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import confetti from "canvas-confetti"
+import { motion, AnimatePresence } from "motion/react"
 import {
   GraduationCap, Clock, Calendar, User, Users, MapPin,
-  Loader2, CheckCircle, ChevronRight, Award,
+  Loader2, CheckCircle, ChevronRight, Award, BookOpen, ArrowRight, X,
 } from "lucide-react"
 
 const TYPE_LABELS = {
@@ -25,19 +27,185 @@ function formatDate(date) {
   })
 }
 
+function formatDateShort(date) {
+  return new Date(date).toLocaleDateString("es-PE", {
+    day: "2-digit", month: "short",
+  })
+}
+
+function fireConfetti() {
+  const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 }
+
+  confetti({ ...defaults, particleCount: 50, origin: { x: 0.2, y: 0.5 } })
+  confetti({ ...defaults, particleCount: 50, origin: { x: 0.8, y: 0.5 } })
+
+  setTimeout(() => {
+    confetti({ ...defaults, particleCount: 30, origin: { x: 0.5, y: 0.3 }, spread: 120 })
+  }, 200)
+
+  setTimeout(() => {
+    confetti({ ...defaults, particleCount: 40, origin: { x: 0.3, y: 0.6 } })
+    confetti({ ...defaults, particleCount: 40, origin: { x: 0.7, y: 0.6 } })
+  }, 400)
+}
+
+// --- Success Dialog ---
+function EnrollmentSuccessDialog({ open, onClose, course }) {
+  useEffect(() => {
+    if (open) fireConfetti()
+  }, [open])
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center">
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 30 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 10 }}
+            transition={{ type: "spring", damping: 25, stiffness: 350 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-[90%] max-w-md mx-4 overflow-hidden"
+          >
+            {/* Close button */}
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Top gradient bar */}
+            <div className="h-2 bg-gradient-to-r from-unamad via-emerald-500 to-unamad" />
+
+            <div className="px-6 pt-8 pb-6 text-center">
+              {/* Animated check icon */}
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
+                className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", damping: 10, stiffness: 300, delay: 0.5 }}
+                >
+                  <CheckCircle className="h-10 w-10 text-emerald-600" strokeWidth={2.5} />
+                </motion.div>
+              </motion.div>
+
+              {/* Title */}
+              <motion.h2
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-2xl font-bold text-gray-900 mb-1"
+              >
+                ¡Inscripción exitosa!
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-sm text-gray-500 mb-6"
+              >
+                Te has inscrito correctamente en
+              </motion.p>
+
+              {/* Course info card */}
+              <motion.div
+                initial={{ opacity: 0, y: 15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="bg-gray-50 rounded-xl p-4 mb-6 text-left border"
+              >
+                <p className="font-semibold text-gray-900 text-sm leading-snug mb-3">{course.name}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {formatDateShort(course.startDate)} — {formatDateShort(course.endDate)}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {course.hours}h
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {MODALITY_LABELS[course.modality]}
+                  </span>
+                </div>
+              </motion.div>
+
+              {/* Actions */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                className="space-y-2"
+              >
+                <Link
+                  href="/mis-cursos"
+                  className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Ver mis cursos
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={onClose}
+                  className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium cursor-pointer"
+                >
+                  Seguir explorando
+                </button>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // --- Main Detail Component ---
 export function CourseDetail({ course, isEnrolled = false }) {
   const { data: session } = useSession()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [enrolling, setEnrolling] = useState(false)
   const [enrolled, setEnrolled] = useState(isEnrolled)
   const [enrollError, setEnrollError] = useState("")
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  // Check if user just came back from registration with auto-enrollment
+  useEffect(() => {
+    if (isEnrolled && !showSuccess) {
+      // Check if this is a fresh redirect (user just registered and was auto-enrolled)
+      const justRegistered = sessionStorage.getItem("just_enrolled_" + course.id)
+      if (justRegistered) {
+        sessionStorage.removeItem("just_enrolled_" + course.id)
+        setShowSuccess(true)
+      }
+    }
+  }, [isEnrolled, course.id])
 
   const spotsLeft = course.spots ? course.spots - course._count.enrollments : null
   const isFull = spotsLeft !== null && spotsLeft <= 0
 
   async function handleEnrollClick() {
     if (!session) {
+      sessionStorage.setItem("just_enrolled_" + course.id, "1")
       router.push(`/auth/register?redirect=/cursos/${course.id}`)
       return
     }
@@ -59,6 +227,7 @@ export function CourseDetail({ course, isEnrolled = false }) {
         }
       } else {
         setEnrolled(true)
+        setShowSuccess(true)
       }
     } catch {
       setEnrollError("Error al conectar con el servidor")
@@ -176,21 +345,27 @@ export function CourseDetail({ course, isEnrolled = false }) {
                 <div className="p-5 space-y-4">
                   {enrolled ? (
                     <div className="text-center py-2">
-                      <div className="flex items-center justify-center gap-2 text-green-600 font-semibold mb-1">
+                      <div className="flex items-center justify-center gap-2 text-emerald-600 font-semibold mb-1">
                         <CheckCircle className="h-5 w-5" /> Inscrito exitosamente
                       </div>
                       <p className="text-xs text-gray-500">Ya estas inscrito en este curso</p>
+                      <Link
+                        href="/mis-cursos"
+                        className="inline-flex items-center gap-1 text-sm text-unamad font-medium hover:text-unamad-dark transition-colors mt-2"
+                      >
+                        Ver mis cursos <ArrowRight className="h-3.5 w-3.5" />
+                      </Link>
                     </div>
                   ) : (
                     <button
                       onClick={handleEnrollClick}
                       disabled={isFull || course.status !== "ABIERTO" || enrolling}
-                      className="w-full bg-unamad text-white py-3 rounded-lg font-semibold hover:bg-unamad-dark transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="w-full bg-unamad text-white py-3 rounded-lg font-semibold hover:bg-unamad-dark transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {enrolling ? (
                         <><Loader2 className="h-5 w-5 animate-spin" /> Inscribiendo...</>
                       ) : isFull ? "Sin vacantes" : course.status !== "ABIERTO" ? "Inscripciones cerradas" : (
-                        <><GraduationCap className="w-5 h-5" />Empezar curso</>
+                        <><GraduationCap className="w-5 h-5" />Inscríbete ahora</>
                       )}
                     </button>
                   )}
@@ -230,6 +405,12 @@ export function CourseDetail({ course, isEnrolled = false }) {
         </div>
       </div>
 
+      {/* Success celebration dialog */}
+      <EnrollmentSuccessDialog
+        open={showSuccess}
+        onClose={() => setShowSuccess(false)}
+        course={course}
+      />
     </>
   )
 }

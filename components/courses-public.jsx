@@ -109,7 +109,7 @@ export function CoursesPublic({ courses }) {
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={scrollToCourses}
-                  className="inline-flex items-center justify-center gap-2 bg-unamad text-white px-6 py-3 rounded-lg font-semibold hover:bg-unamad-dark transition-all shadow-lg hover:shadow-xl text-sm"
+                  className="inline-flex items-center justify-center gap-2 bg-unamad text-white px-6 py-3 rounded-lg font-semibold hover:bg-unamad-dark transition-all shadow-lg hover:shadow-xl text-sm cursor-pointer"
                 >
                   Ver Cursos
                 </button>

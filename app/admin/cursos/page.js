@@ -31,7 +31,7 @@ export default async function CursosPage({ searchParams }) {
   const orderBy = {}
   orderBy[sortBy] = sortOrder
 
-  const [courses, total, openCount, totalEnrollments, dependencias] = await Promise.all([
+  const [courses, total, openCount, totalEnrollments, dependencias, users] = await Promise.all([
     prisma.course.findMany({
       where,
       include: { _count: { select: { enrollments: true } }, dependencia: { select: { name: true, abbreviation: true } } },
@@ -47,6 +47,11 @@ export default async function CursosPage({ searchParams }) {
       include: { sede: { select: { name: true } } },
       orderBy: { name: "asc" },
     }),
+    prisma.user.findMany({
+      where: { status: "ACTIVE" },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: "asc" },
+    }),
   ])
 
   const totalPages = Math.ceil(total / pageSize)
@@ -55,6 +60,7 @@ export default async function CursosPage({ searchParams }) {
     <CoursesTable
       data={{ courses, total, openCount, totalEnrollments, page, pageSize, totalPages }}
       dependencias={dependencias}
+      users={users}
     />
   )
 }

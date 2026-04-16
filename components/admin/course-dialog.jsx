@@ -7,10 +7,11 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Loader2, Upload, X, ImageIcon, ChevronsUpDown, Check } from "lucide-react"
+import { Loader2, Upload, X, ImageIcon, ChevronsUpDown, Check, Users, UserCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createCourseAction, updateCourseAction } from "@/app/admin/cursos/actions"
 import { TiptapEditor } from "./tiptap-editor"
@@ -45,7 +46,89 @@ function formatDateForInput(date) {
   return new Date(date).toISOString().split("T")[0]
 }
 
-export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) {
+// --- Multi-select user picker ---
+function UserMultiSelect({ users, selected, onChange, label, icon: Icon, placeholder }) {
+  const [open, setOpen] = useState(false)
+
+  function toggleUser(user) {
+    const exists = selected.find((u) => u.id === user.id)
+    if (exists) {
+      onChange(selected.filter((u) => u.id !== user.id))
+    } else {
+      onChange([...selected, { id: user.id, name: user.name || user.email }])
+    }
+  }
+
+  function removeUser(userId) {
+    onChange(selected.filter((u) => u.id !== userId))
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="flex items-center gap-1.5">
+        {Icon && <Icon className="h-3.5 w-3.5 text-muted-foreground" />}
+        {label}
+      </Label>
+
+      {/* Selected badges */}
+      {selected.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {selected.map((u) => (
+            <Badge key={u.id} variant="secondary" className="gap-1 pr-1">
+              {u.name}
+              <button
+                type="button"
+                onClick={() => removeUser(u.id)}
+                className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5 cursor-pointer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between font-normal">
+            {selected.length === 0
+              ? placeholder
+              : `${selected.length} seleccionado${selected.length > 1 ? "s" : ""}`}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Buscar usuario..." />
+            <CommandList>
+              <CommandEmpty>No se encontró usuario.</CommandEmpty>
+              <CommandGroup>
+                {users.map((user) => {
+                  const isSelected = selected.some((u) => u.id === user.id)
+                  return (
+                    <CommandItem
+                      key={user.id}
+                      value={`${user.name} ${user.email}`}
+                      onSelect={() => toggleUser(user)}
+                    >
+                      <Check className={cn("mr-2 h-4 w-4", isSelected ? "opacity-100" : "opacity-0")} />
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate text-sm">{user.name || "Sin nombre"}</span>
+                        <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                      </div>
+                    </CommandItem>
+                  )
+                })}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
+}
+
+export function CourseDialog({ open, onOpenChange, course, dependencias = [], users = [] }) {
   const isEditing = !!course
   const action = isEditing ? updateCourseAction : createCourseAction
   const [state, formAction, isPending] = useActionState(action, null)
@@ -56,15 +139,29 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
   const [uploading, setUploading] = useState(false)
   const [depId, setDepId] = useState(course?.dependenciaId || "")
   const [depOpen, setDepOpen] = useState(false)
+  const [ponentes, setPonentes] = useState(() => {
+    if (course?.ponentes && Array.isArray(course.ponentes)) return course.ponentes
+    // Backward compat: if only instructor string exists, don't auto-select
+    return []
+  })
+  const [organizadores, setOrganizadores] = useState(() => {
+    if (course?.organizadores && Array.isArray(course.organizadores)) return course.organizadores
+    return []
+  })
 
   useEffect(() => {
     setImageUrl(course?.imageUrl || "")
     setContentHtml(course?.content || "")
     setDepId(course?.dependenciaId || "")
+    setPonentes(course?.ponentes && Array.isArray(course.ponentes) ? course.ponentes : [])
+    setOrganizadores(course?.organizadores && Array.isArray(course.organizadores) ? course.organizadores : [])
   }, [course])
 
   useEffect(() => {
-    if (open && !course) { setImageUrl(""); setContentHtml(""); setDepId("") }
+    if (open && !course) {
+      setImageUrl(""); setContentHtml(""); setDepId("")
+      setPonentes([]); setOrganizadores([])
+    }
   }, [open, course])
 
   useEffect(() => {
@@ -111,6 +208,8 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
         <form ref={formRef} action={formAction} className="space-y-4">
           {isEditing && <input type="hidden" name="courseId" value={course.id} />}
           <input type="hidden" name="imageUrl" value={imageUrl} />
+          <input type="hidden" name="ponentes" value={JSON.stringify(ponentes)} />
+          <input type="hidden" name="organizadores" value={JSON.stringify(organizadores)} />
 
           {state?.error && (
             <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{state.error}</div>
@@ -125,7 +224,7 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}
-                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80"
+                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -145,25 +244,31 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
             )}
           </div>
 
-          {/* Tipo y nombre */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-5">
-            <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="type">Tipo</Label>
-              <Select name="type" defaultValue={course?.type || ""}>
-                <SelectTrigger id="type" aria-invalid={!!state?.fieldErrors?.type}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {state?.fieldErrors?.type && <p className="text-xs text-destructive">{state.fieldErrors.type}</p>}
-            </div>
-            <div className="sm:col-span-3 space-y-2">
-              <Label htmlFor="name">Nombre</Label>
-              <Input id="name" name="name" defaultValue={course?.name || ""} placeholder="Nombre del curso" aria-invalid={!!state?.fieldErrors?.name} />
-              {state?.fieldErrors?.name && <p className="text-xs text-destructive">{state.fieldErrors.name}</p>}
-            </div>
+          {/* Tipo */}
+          <div className="space-y-2">
+            <Label htmlFor="type">Tipo</Label>
+            <Select name="type" defaultValue={course?.type || ""}>
+              <SelectTrigger id="type" aria-invalid={!!state?.fieldErrors?.type}>
+                <SelectValue placeholder="Seleccionar" />
+              </SelectTrigger>
+              <SelectContent>
+                {TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {state?.fieldErrors?.type && <p className="text-xs text-destructive">{state.fieldErrors.type}</p>}
+          </div>
+
+          {/* Nombre - textarea */}
+          <div className="space-y-2">
+            <Label htmlFor="name">Nombre</Label>
+            <textarea
+              id="name" name="name" defaultValue={course?.name || ""}
+              placeholder="Nombre completo del curso, capacitación o taller..."
+              rows={2}
+              aria-invalid={!!state?.fieldErrors?.name}
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+            />
+            {state?.fieldErrors?.name && <p className="text-xs text-destructive">{state.fieldErrors.name}</p>}
           </div>
 
           {/* Descripcion */}
@@ -173,7 +278,7 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
               id="description" name="description" defaultValue={course?.description || ""}
               placeholder="Descripcion breve del curso..."
               rows={2}
-              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
             />
           </div>
 
@@ -183,38 +288,52 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
             <TiptapEditor content={contentHtml} onChange={setContentHtml} name="content" />
           </div>
 
-          {/* Instructor y horas */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-2 space-y-2">
-              <Label htmlFor="instructor">Instructor/Ponente</Label>
-              <Input id="instructor" name="instructor" defaultValue={course?.instructor || ""} placeholder="Nombre del instructor" aria-invalid={!!state?.fieldErrors?.instructor} />
-              {state?.fieldErrors?.instructor && <p className="text-xs text-destructive">{state.fieldErrors.instructor}</p>}
-            </div>
+          {/* Ponentes (multi-select) */}
+          <UserMultiSelect
+            users={users}
+            selected={ponentes}
+            onChange={setPonentes}
+            label="Ponentes"
+            icon={UserCheck}
+            placeholder="Seleccionar ponentes..."
+          />
+          {state?.fieldErrors?.ponentes && <p className="text-xs text-destructive">{state.fieldErrors.ponentes}</p>}
+
+          {/* Organizadores (multi-select) */}
+          <UserMultiSelect
+            users={users}
+            selected={organizadores}
+            onChange={setOrganizadores}
+            label="Organizadores"
+            icon={Users}
+            placeholder="Seleccionar organizadores..."
+          />
+
+          {/* Horas */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="hours">Horas</Label>
               <Input id="hours" name="hours" type="number" min="1" defaultValue={course?.hours || ""} placeholder="40" aria-invalid={!!state?.fieldErrors?.hours} />
               {state?.fieldErrors?.hours && <p className="text-xs text-destructive">{state.fieldErrors.hours}</p>}
             </div>
-          </div>
-
-          {/* Modalidad y vacantes */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="modality">Modalidad</Label>
-              <Select name="modality" defaultValue={course?.modality || ""}>
-                <SelectTrigger id="modality" aria-invalid={!!state?.fieldErrors?.modality}>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MODALITIES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              {state?.fieldErrors?.modality && <p className="text-xs text-destructive">{state.fieldErrors.modality}</p>}
-            </div>
             <div className="space-y-2">
               <Label htmlFor="spots">Vacantes (opcional)</Label>
               <Input id="spots" name="spots" type="number" min="1" defaultValue={course?.spots || ""} placeholder="Sin limite" />
             </div>
+          </div>
+
+          {/* Modalidad */}
+          <div className="space-y-2">
+            <Label htmlFor="modality">Modalidad</Label>
+            <Select name="modality" defaultValue={course?.modality || ""}>
+              <SelectTrigger id="modality" aria-invalid={!!state?.fieldErrors?.modality}>
+                <SelectValue placeholder="Seleccionar" />
+              </SelectTrigger>
+              <SelectContent>
+                {MODALITIES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {state?.fieldErrors?.modality && <p className="text-xs text-destructive">{state.fieldErrors.modality}</p>}
           </div>
 
           {/* Dependencia (opcional) */}
@@ -288,7 +407,7 @@ export function CourseDialog({ open, onOpenChange, course, dependencias = [] }) 
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={isPending || uploading}>
+            <Button type="submit" disabled={isPending || uploading} className="cursor-pointer">
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isEditing ? "Guardar cambios" : "Crear curso"}
             </Button>

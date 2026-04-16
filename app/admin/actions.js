@@ -22,14 +22,23 @@ export async function createUserAction(_prevState, formData) {
   const { error } = await requireAdmin()
   if (error) return { error }
 
-  const name = formData.get("name")?.trim()
+  const documentType = formData.get("documentType")
+  const documentNumber = formData.get("documentNumber")?.trim()
+  const firstName = formData.get("firstName")?.trim()
+  const paternalSurname = formData.get("paternalSurname")?.trim()
+  const maternalSurname = formData.get("maternalSurname")?.trim()
   const email = formData.get("email")?.trim()
   const password = formData.get("password")
   const role = formData.get("role")
 
   const fieldErrors = {}
 
-  if (!name) fieldErrors.name = "Nombre es requerido"
+  if (!documentType || !["DNI", "CE", "PASAPORTE"].includes(documentType))
+    fieldErrors.documentType = "Tipo de documento requerido"
+  if (!documentNumber) fieldErrors.documentNumber = "Número de documento requerido"
+  if (!firstName) fieldErrors.firstName = "Nombres es requerido"
+  if (!paternalSurname) fieldErrors.paternalSurname = "Apellido paterno es requerido"
+  if (!maternalSurname) fieldErrors.maternalSurname = "Apellido materno es requerido"
   if (!email) fieldErrors.email = "Email es requerido"
   else if (!validateEmail(email)) fieldErrors.email = "Email no tiene formato válido"
   if (!password) fieldErrors.password = "Contraseña es requerida"
@@ -39,14 +48,20 @@ export async function createUserAction(_prevState, formData) {
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
-  const existing = await prisma.user.findUnique({ where: { email } })
-  if (existing) return { fieldErrors: { email: "Este email ya está registrado" } }
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ email }, { documentNumber }] },
+  })
+  if (existing) {
+    if (existing.email === email) return { fieldErrors: { email: "Este email ya está registrado" } }
+    return { fieldErrors: { documentNumber: "Este documento ya está registrado" } }
+  }
 
   const hashedPassword = await bcrypt.hash(password, 12)
+  const name = `${firstName} ${paternalSurname} ${maternalSurname}`
 
   try {
     await prisma.user.create({
-      data: { name, email, password: hashedPassword, role },
+      data: { name, email, password: hashedPassword, role, documentType, documentNumber, firstName, paternalSurname, maternalSurname },
     })
   } catch {
     return { error: "Error al crear usuario" }
@@ -62,7 +77,11 @@ export async function updateUserAction(_prevState, formData) {
   if (error) return { error }
 
   const userId = formData.get("userId")
-  const name = formData.get("name")?.trim()
+  const documentType = formData.get("documentType")
+  const documentNumber = formData.get("documentNumber")?.trim()
+  const firstName = formData.get("firstName")?.trim()
+  const paternalSurname = formData.get("paternalSurname")?.trim()
+  const maternalSurname = formData.get("maternalSurname")?.trim()
   const email = formData.get("email")?.trim()
   const role = formData.get("role")
 
@@ -70,7 +89,12 @@ export async function updateUserAction(_prevState, formData) {
 
   const fieldErrors = {}
 
-  if (!name) fieldErrors.name = "Nombre es requerido"
+  if (!documentType || !["DNI", "CE", "PASAPORTE"].includes(documentType))
+    fieldErrors.documentType = "Tipo de documento requerido"
+  if (!documentNumber) fieldErrors.documentNumber = "Número de documento requerido"
+  if (!firstName) fieldErrors.firstName = "Nombres es requerido"
+  if (!paternalSurname) fieldErrors.paternalSurname = "Apellido paterno es requerido"
+  if (!maternalSurname) fieldErrors.maternalSurname = "Apellido materno es requerido"
   if (!email) fieldErrors.email = "Email es requerido"
   else if (!validateEmail(email)) fieldErrors.email = "Email no tiene formato válido"
   if (!role || !["user", "admin", "superadmin"].includes(role))
@@ -78,15 +102,22 @@ export async function updateUserAction(_prevState, formData) {
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
-  const existing = await prisma.user.findFirst({
+  const existingEmail = await prisma.user.findFirst({
     where: { email, NOT: { id: userId } },
   })
-  if (existing) return { fieldErrors: { email: "Este email ya está registrado" } }
+  if (existingEmail) return { fieldErrors: { email: "Este email ya está registrado" } }
+
+  const existingDoc = await prisma.user.findFirst({
+    where: { documentNumber, NOT: { id: userId } },
+  })
+  if (existingDoc) return { fieldErrors: { documentNumber: "Este documento ya está registrado" } }
+
+  const name = `${firstName} ${paternalSurname} ${maternalSurname}`
 
   try {
     await prisma.user.update({
       where: { id: userId },
-      data: { name, email, role },
+      data: { name, email, role, documentType, documentNumber, firstName, paternalSurname, maternalSurname },
     })
   } catch {
     return { error: "Error al actualizar usuario" }

@@ -77,7 +77,7 @@ function SortableHeader({ label, field, currentField, currentOrder, onSort, clas
   )
 }
 
-export function CoursesTable({ data, dependencias = [] }) {
+export function CoursesTable({ data, dependencias = [], users = [] }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isNavigating, startTransition] = useTransition()
@@ -304,7 +304,7 @@ export function CoursesTable({ data, dependencias = [] }) {
         </Card>
       </motion.div>
 
-      <CourseDialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditCourse(null) }} course={editCourse} dependencias={dependencias} />
+      <CourseDialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setEditCourse(null) }} course={editCourse} dependencias={dependencias} users={users} />
       <CourseDeleteDialog open={deleteDialogOpen} onOpenChange={(open) => { setDeleteDialogOpen(open); if (!open) setDeleteCourse(null) }} course={deleteCourse} />
     </div>
   )

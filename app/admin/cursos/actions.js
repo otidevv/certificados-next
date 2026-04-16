@@ -31,9 +31,16 @@ export async function createCourseAction(_prevState, formData) {
   const modality = formData.get("modality")
   const startDate = formData.get("startDate")
   const endDate = formData.get("endDate")
-  const instructor = formData.get("instructor")?.trim()
   const spotsRaw = formData.get("spots")?.trim()
   const spots = spotsRaw ? Number(spotsRaw) : null
+
+  let ponentes = []
+  try { ponentes = JSON.parse(formData.get("ponentes") || "[]") } catch { ponentes = [] }
+  let organizadores = []
+  try { organizadores = JSON.parse(formData.get("organizadores") || "[]") } catch { organizadores = [] }
+
+  // Build instructor string from ponentes for backward compat and display
+  const instructor = ponentes.map((p) => p.name).join(", ") || ""
 
   const fieldErrors = {}
 
@@ -45,7 +52,7 @@ export async function createCourseAction(_prevState, formData) {
   if (!endDate) fieldErrors.endDate = "Fecha de fin es requerida"
   if (startDate && endDate && new Date(startDate) > new Date(endDate))
     fieldErrors.endDate = "Fecha de fin debe ser posterior al inicio"
-  if (!instructor) fieldErrors.instructor = "Instructor es requerido"
+  if (ponentes.length === 0) fieldErrors.ponentes = "Selecciona al menos un ponente"
   if (spots !== null && spots < 1) fieldErrors.spots = "Vacantes debe ser al menos 1"
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
@@ -55,7 +62,8 @@ export async function createCourseAction(_prevState, formData) {
       data: {
         name, type, description, content, imageUrl, hours, modality,
         startDate: new Date(startDate), endDate: new Date(endDate),
-        instructor, spots, dependenciaId: dependenciaId || null,
+        instructor, ponentes, organizadores: organizadores.length > 0 ? organizadores : undefined,
+        spots, dependenciaId: dependenciaId || null,
       },
     })
   } catch {
@@ -83,10 +91,16 @@ export async function updateCourseAction(_prevState, formData) {
   const modality = formData.get("modality")
   const startDate = formData.get("startDate")
   const endDate = formData.get("endDate")
-  const instructor = formData.get("instructor")?.trim()
   const spotsRaw = formData.get("spots")?.trim()
   const spots = spotsRaw ? Number(spotsRaw) : null
   const status = formData.get("status")
+
+  let ponentes = []
+  try { ponentes = JSON.parse(formData.get("ponentes") || "[]") } catch { ponentes = [] }
+  let organizadores = []
+  try { organizadores = JSON.parse(formData.get("organizadores") || "[]") } catch { organizadores = [] }
+
+  const instructor = ponentes.map((p) => p.name).join(", ") || ""
 
   if (!courseId) return { error: "ID de curso requerido" }
 
@@ -100,7 +114,7 @@ export async function updateCourseAction(_prevState, formData) {
   if (!endDate) fieldErrors.endDate = "Fecha de fin es requerida"
   if (startDate && endDate && new Date(startDate) > new Date(endDate))
     fieldErrors.endDate = "Fecha de fin debe ser posterior al inicio"
-  if (!instructor) fieldErrors.instructor = "Instructor es requerido"
+  if (ponentes.length === 0) fieldErrors.ponentes = "Selecciona al menos un ponente"
   if (spots !== null && spots < 1) fieldErrors.spots = "Vacantes debe ser al menos 1"
   if (status && !VALID_STATUSES.includes(status)) fieldErrors.status = "Estado no válido"
 
@@ -112,7 +126,8 @@ export async function updateCourseAction(_prevState, formData) {
       data: {
         name, type, description, content, imageUrl, hours, modality,
         startDate: new Date(startDate), endDate: new Date(endDate),
-        instructor, spots, status: status || undefined,
+        instructor, ponentes, organizadores: organizadores.length > 0 ? organizadores : null,
+        spots, status: status || undefined,
         dependenciaId: dependenciaId || null,
       },
     })

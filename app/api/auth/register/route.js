@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma';
 
 export async function POST(request) {
   try {
-    const { documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password } = await request.json();
+    const { documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password, courseId } = await request.json();
 
     // Validar campos requeridos
     if (!documentType || !documentNumber || !firstName || !paternalSurname || !maternalSurname || !email || !password) {
@@ -84,10 +84,39 @@ export async function POST(request) {
       },
     });
 
+    // Auto-inscribir al curso si se proporcionó courseId
+    let enrolled = false;
+    if (courseId) {
+      try {
+        const course = await prisma.course.findUnique({
+          where: { id: courseId },
+          include: { _count: { select: { enrollments: true } } },
+        });
+        if (course && course.status === 'ABIERTO' && (!course.spots || course._count.enrollments < course.spots)) {
+          await prisma.enrollment.create({
+            data: {
+              courseId,
+              userId: user.id,
+              documentType,
+              documentNumber,
+              firstName,
+              paternalSurname,
+              maternalSurname,
+              email,
+            },
+          });
+          enrolled = true;
+        }
+      } catch {
+        // Si falla la inscripción, no bloquear el registro
+      }
+    }
+
     return NextResponse.json(
       {
-        message: 'Usuario creado exitosamente',
+        message: enrolled ? 'Cuenta creada e inscrito exitosamente' : 'Usuario creado exitosamente',
         user: { id: user.id, email: user.email, name: user.name },
+        enrolled,
       },
       { status: 201 }
     );

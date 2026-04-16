@@ -12,8 +12,9 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
-  Search, X, Users, ArrowLeft, Loader2, Mail, Phone, FileText,
+  Search, X, Users, ArrowLeft, Loader2, Mail, Phone, FileText, Download,
 } from "lucide-react"
+import * as XLSX from "xlsx"
 import { DataTablePagination } from "./data-table-pagination"
 
 const ease = [0.22, 1, 0.36, 1]
@@ -53,6 +54,59 @@ export function CourseEnrollmentsTable({ course, data }) {
   const [isNavigating, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
 
+  function exportToExcel() {
+    const rows = []
+    let seq = 1
+
+    // Ponentes
+    const ponentes = Array.isArray(course.ponentes) ? course.ponentes : []
+    for (const p of ponentes) {
+      rows.push({
+        numero_secuencial: seq++,
+        numero_documento: p.documentNumber || "",
+        nombre_completo: p.name || "",
+        cargo: "PONENTE",
+      })
+    }
+
+    // Organizadores
+    const organizadores = Array.isArray(course.organizadores) ? course.organizadores : []
+    for (const o of organizadores) {
+      rows.push({
+        numero_secuencial: seq++,
+        numero_documento: o.documentNumber || "",
+        nombre_completo: o.name || "",
+        cargo: "ORGANIZADOR",
+      })
+    }
+
+    // Participantes (all enrollments)
+    for (const e of data.allEnrollments) {
+      rows.push({
+        numero_secuencial: seq++,
+        numero_documento: e.documentNumber,
+        nombre_completo: `${e.firstName} ${e.paternalSurname} ${e.maternalSurname}`,
+        cargo: "PARTICIPANTE",
+      })
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+
+    // Column widths
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 16 },
+      { wch: 40 },
+      { wch: 16 },
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Inscritos")
+
+    // Write with UTF-8 BOM for ñ support
+    XLSX.writeFile(wb, `inscritos_${course.name.slice(0, 40).replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ ]/g, "").replace(/\s+/g, "_")}.xlsx`, { bookType: "xlsx" })
+  }
+
   const debounceRef = useRef(null)
   const isFirstRender = useRef(true)
 
@@ -82,11 +136,14 @@ export function CourseEnrollmentsTable({ course, data }) {
     <div className="space-y-4">
       {/* Header */}
       <motion.div className="flex flex-col gap-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease }}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/cursos">
               <ArrowLeft className="mr-2 h-4 w-4" />Volver
             </Link>
+          </Button>
+          <Button size="sm" onClick={exportToExcel} className="cursor-pointer">
+            <Download className="mr-2 h-4 w-4" />Exportar Excel
           </Button>
         </div>
         <div>

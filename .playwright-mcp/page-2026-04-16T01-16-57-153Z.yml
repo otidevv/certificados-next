@@ -1,0 +1,139 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD Universidad Nacional Amazonica de Madre de Dios" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+          - generic [ref=e8]:
+            - paragraph [ref=e9]: Universidad Nacional Amazonica
+            - paragraph [ref=e10]: de Madre de Dios
+        - navigation [ref=e11]:
+          - link "Inicio" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - link "Capacitacion" [ref=e13] [cursor=pointer]:
+            - /url: /#cursos
+          - link "Cursos" [ref=e14] [cursor=pointer]:
+            - /url: /cursos
+          - link "Certificados" [ref=e15] [cursor=pointer]:
+            - /url: /certificados
+        - link "Ingresar" [ref=e17] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e18]
+          - text: Ingresar
+    - generic [ref=e21]:
+      - generic:
+        - img
+        - img
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - paragraph [ref=e26]: Centro de Capacitacion
+          - heading "CAPACITA-T" [level=1] [ref=e27]
+        - paragraph [ref=e28]: Encuentra cursos, talleres y capacitaciones para desarrollar y fortalecer tus competencias profesionales.
+        - generic [ref=e29]:
+          - button "Ver Cursos" [ref=e30] [cursor=pointer]
+          - link "Registrate para inscribirte" [ref=e31] [cursor=pointer]:
+            - /url: /auth/register
+      - img [ref=e33]
+    - generic [ref=e36]:
+      - heading "Aliados" [level=2] [ref=e38]
+      - generic [ref=e42]:
+        - generic [ref=e43]:
+          - img "Google" [ref=e44]
+          - img "Universidad 2" [ref=e45]
+          - img "Universidad 3" [ref=e46]
+          - img "Universidad 4" [ref=e47]
+          - img "UNSAAC" [ref=e48]
+          - img "Turnitin" [ref=e49]
+        - generic [ref=e50]:
+          - img [ref=e51]
+          - img [ref=e52]
+          - img [ref=e53]
+          - img [ref=e54]
+          - img [ref=e55]
+          - img [ref=e56]
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - heading "Cursos Disponibles" [level=2] [ref=e60]
+        - paragraph [ref=e61]: Selecciona un curso y completa tu inscripcion. Puedes inscribirte con o sin cuenta.
+      - link "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Capacitacion CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Alberto Peña Mondragon 1h Virtual" [ref=e63] [cursor=pointer]:
+        - /url: /cursos/cmo0rbc0f0000b0tu3649n45l
+        - generic [ref=e64]:
+          - generic [ref=e65]:
+            - img "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [ref=e66]
+            - generic [ref=e67]: Capacitacion
+          - generic [ref=e68]:
+            - heading "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [level=3] [ref=e69]
+            - paragraph [ref=e70]:
+              - img [ref=e71]
+              - text: Alberto Peña Mondragon
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - img [ref=e76]
+                - text: 1h
+              - generic [ref=e79]: Virtual
+      - link "Explorar todos los cursos" [ref=e81] [cursor=pointer]:
+        - /url: /cursos
+        - img [ref=e82]
+        - text: Explorar todos los cursos
+    - contentinfo [ref=e85]:
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]:
+            - img "UNAMAD" [ref=e90]
+            - generic [ref=e91]:
+              - paragraph [ref=e92]: UNAMAD
+              - paragraph [ref=e93]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e94]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e95]:
+          - heading "Plataforma" [level=4] [ref=e96]
+          - list [ref=e97]:
+            - listitem [ref=e98]:
+              - link "Cursos disponibles" [ref=e99] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e100]:
+              - link "Generador de certificados" [ref=e101] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e102]:
+              - link "Herramientas" [ref=e103] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e104]:
+          - heading "Acceso" [level=4] [ref=e105]
+          - list [ref=e106]:
+            - listitem [ref=e107]:
+              - link "Iniciar sesion" [ref=e108] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e109]:
+              - link "Registrarse" [ref=e110] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e111]:
+              - link "Panel administrativo" [ref=e112] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e113]:
+          - heading "Contacto" [level=4] [ref=e114]
+          - list [ref=e115]:
+            - listitem [ref=e116]:
+              - img [ref=e117]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e120]:
+              - img [ref=e121]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e123]:
+              - img [ref=e124]
+              - text: (082) 571-046
+      - generic [ref=e127]:
+        - paragraph [ref=e128]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e129]:
+          - link "Facebook" [ref=e130] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e131]
+          - link "YouTube" [ref=e133] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e134]
+          - link "TikTok" [ref=e136] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e137]
+  - button "Open Next.js Dev Tools" [ref=e144] [cursor=pointer]:
+    - img [ref=e145]

@@ -59,7 +59,9 @@ model Course {
   modality    String       // "PRESENCIAL" | "VIRTUAL" | "SEMIPRESENCIAL"
   startDate   DateTime
   endDate     DateTime
-  instructor  String
+  instructor  String       // Mantenido por compatibilidad (resumen de ponentes)
+  ponentes    Json?        // [{id, name}] - ponentes seleccionados de usuarios
+  organizadores Json?      // [{id, name}] - organizadores del curso
   spots       Int?         // null = sin límite
   dependenciaId String?
   dependencia   Dependencia? @relation(fields: [dependenciaId], references: [id])

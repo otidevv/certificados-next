@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { UserPlus, Loader2, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function RegisterForm() {
   const router = useRouter();
-  const [documentType, setDocumentType] = useState('');
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '';
+  // Extract courseId from redirect like /cursos/abc123
+  const courseId = redirectUrl.match(/^\/cursos\/([^/]+)$/)?.[1] || '';
+  const [documentType, setDocumentType] = useState('DNI');
   const [documentNumber, setDocumentNumber] = useState('');
   const [firstName, setFirstName] = useState('');
   const [paternalSurname, setPaternalSurname] = useState('');
@@ -24,6 +29,8 @@ export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [isLookingUp, setIsLookingUp] = useState(false);
   const [lookupDone, setLookupDone] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Auto-lookup DNI via UNAMAD API
   const lookupDni = useCallback(async (dni) => {
@@ -74,11 +81,29 @@ export default function RegisterForm() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password }),
+        body: JSON.stringify({ documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password, courseId: courseId || undefined }),
       });
       const data = await res.json();
-      if (!res.ok) setError(data.error || 'Error al registrar usuario');
-      else router.push('/auth/login?registered=true');
+      if (!res.ok) {
+        setError(data.error || 'Error al registrar usuario');
+        return;
+      }
+
+      // Auto-login after registration
+      const loginResult = await signIn('credentials', { email, password, redirect: false });
+      if (loginResult?.error) {
+        // Login failed but account was created - send to login page
+        router.push('/auth/login?registered=true');
+        return;
+      }
+
+      // Redirect to course (already enrolled) or home
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      } else {
+        router.push('/');
+      }
+      router.refresh();
     } catch {
       setError('Error al conectar con el servidor');
     } finally {
@@ -95,7 +120,9 @@ export default function RegisterForm() {
             <img src="/img/logo.png" alt="UNAMAD" className="h-16 w-16 mx-auto mb-3 object-contain" />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">Crear Cuenta</h1>
-          <p className="text-sm text-muted-foreground mt-1">Registrate para inscribirte en cursos y capacitaciones</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {courseId ? 'Crea tu cuenta y te inscribiremos automáticamente al curso' : 'Regístrate para inscribirte en cursos y capacitaciones'}
+          </p>
         </div>
 
         <Card>
@@ -168,16 +195,26 @@ export default function RegisterForm() {
               {/* Contraseñas */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <Label htmlFor="password">Contrasena</Label>
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 caracteres" required />
+                  <Label htmlFor="password">Contraseña</Label>
+                  <div className="relative">
+                    <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 caracteres" required className="pr-9" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" tabIndex={-1}>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmar</Label>
-                  <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetir" required />
+                  <div className="relative">
+                    <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetir" required className="pr-9" />
+                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" tabIndex={-1}>
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full bg-unamad hover:bg-unamad-dark">
+              <Button type="submit" disabled={isLoading} className="w-full bg-unamad hover:bg-unamad-dark cursor-pointer">
                 {isLoading ? (
                   <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Registrando...</>
                 ) : (
@@ -188,8 +225,8 @@ export default function RegisterForm() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Ya tienes cuenta? </span>
-              <Link href="/auth/login" className="text-unamad font-semibold hover:text-unamad-dark">
-                Inicia sesion
+              <Link href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/login'} className="text-unamad font-semibold hover:text-unamad-dark">
+                Inicia sesión
               </Link>
             </div>
           </CardContent>
