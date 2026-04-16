@@ -61,7 +61,7 @@ export async function createCourseAction(_prevState, formData) {
     await prisma.course.create({
       data: {
         name, type, description, content, imageUrl, hours, modality,
-        startDate: new Date(startDate), endDate: new Date(endDate),
+        startDate: new Date(startDate + "T12:00:00"), endDate: new Date(endDate + "T12:00:00"),
         instructor, ponentes, organizadores: organizadores.length > 0 ? organizadores : undefined,
         spots, dependenciaId: dependenciaId || null,
       },
@@ -125,7 +125,7 @@ export async function updateCourseAction(_prevState, formData) {
       where: { id: courseId },
       data: {
         name, type, description, content, imageUrl, hours, modality,
-        startDate: new Date(startDate), endDate: new Date(endDate),
+        startDate: new Date(startDate + "T12:00:00"), endDate: new Date(endDate + "T12:00:00"),
         instructor, ponentes, organizadores: organizadores.length > 0 ? organizadores : null,
         spots, status: status || undefined,
         dependenciaId: dependenciaId || null,

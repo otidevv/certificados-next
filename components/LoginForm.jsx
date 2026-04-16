@@ -96,6 +96,12 @@ export default function LoginForm() {
                 </div>
               </div>
 
+              <div className="text-right">
+                <Link href="/auth/forgot-password" className="text-sm text-unamad hover:text-unamad-dark font-medium">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+
               <Button
                 type="submit"
                 disabled={isLoading}

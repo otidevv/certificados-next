@@ -28,7 +28,7 @@ const STATUS_COLORS = {
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString("es-PE", {
-    day: "2-digit", month: "short", year: "numeric",
+    day: "2-digit", month: "short", year: "numeric", timeZone: "UTC",
   })
 }
 
