@@ -1,0 +1,111 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD Universidad Nacional Amazonica de Madre de Dios" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+          - generic [ref=e8]:
+            - paragraph [ref=e9]: Universidad Nacional Amazonica
+            - paragraph [ref=e10]: de Madre de Dios
+        - navigation [ref=e11]:
+          - link "Inicio" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - link "Capacitacion" [ref=e13] [cursor=pointer]:
+            - /url: /#cursos
+          - link "Cursos" [ref=e14] [cursor=pointer]:
+            - /url: /cursos
+          - link "Certificados" [ref=e15] [cursor=pointer]:
+            - /url: /certificados
+        - link "Ingresar" [ref=e17] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e18]
+          - text: Ingresar
+    - main [ref=e21]:
+      - generic:
+        - img
+        - img
+        - img
+        - img
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - link "UNAMAD" [ref=e26] [cursor=pointer]:
+            - /url: /
+            - img "UNAMAD" [ref=e27]
+          - heading "Recuperar contraseña" [level=1] [ref=e28]
+          - paragraph [ref=e29]: Ingresa tu correo y te enviaremos un enlace para restablecer tu contraseña
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - generic [ref=e34]: Correo electrónico
+              - textbox "Correo electrónico" [ref=e35]:
+                - /placeholder: tu@email.com
+            - button "Enviar enlace de recuperación" [ref=e36] [cursor=pointer]:
+              - img
+              - text: Enviar enlace de recuperación
+          - link "Volver al inicio de sesión" [ref=e38] [cursor=pointer]:
+            - /url: /auth/login
+            - img [ref=e39]
+            - text: Volver al inicio de sesión
+    - contentinfo [ref=e41]:
+      - generic [ref=e43]:
+        - generic [ref=e44]:
+          - generic [ref=e45]:
+            - img "UNAMAD" [ref=e46]
+            - generic [ref=e47]:
+              - paragraph [ref=e48]: UNAMAD
+              - paragraph [ref=e49]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e50]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e51]:
+          - heading "Plataforma" [level=4] [ref=e52]
+          - list [ref=e53]:
+            - listitem [ref=e54]:
+              - link "Cursos disponibles" [ref=e55] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e56]:
+              - link "Generador de certificados" [ref=e57] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e58]:
+              - link "Herramientas" [ref=e59] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e60]:
+          - heading "Acceso" [level=4] [ref=e61]
+          - list [ref=e62]:
+            - listitem [ref=e63]:
+              - link "Iniciar sesion" [ref=e64] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e65]:
+              - link "Registrarse" [ref=e66] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e67]:
+              - link "Panel administrativo" [ref=e68] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e69]:
+          - heading "Contacto" [level=4] [ref=e70]
+          - list [ref=e71]:
+            - listitem [ref=e72]:
+              - img [ref=e73]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e76]:
+              - img [ref=e77]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e79]:
+              - img [ref=e80]
+              - text: (082) 571-046
+      - generic [ref=e83]:
+        - paragraph [ref=e84]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e85]:
+          - link "Facebook" [ref=e86] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e87]
+          - link "YouTube" [ref=e89] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e90]
+          - link "TikTok" [ref=e92] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e93]
+  - button "Open Next.js Dev Tools" [ref=e100] [cursor=pointer]:
+    - img [ref=e101]
+  - alert [ref=e104]

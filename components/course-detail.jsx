@@ -23,13 +23,13 @@ const MODALITY_LABELS = {
 
 function formatDate(date) {
   return new Date(date).toLocaleDateString("es-PE", {
-    day: "2-digit", month: "long", year: "numeric",
+    day: "2-digit", month: "long", year: "numeric", timeZone: "UTC",
   })
 }
 
 function formatDateShort(date) {
   return new Date(date).toLocaleDateString("es-PE", {
-    day: "2-digit", month: "short",
+    day: "2-digit", month: "short", timeZone: "UTC",
   })
 }
 

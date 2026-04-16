@@ -58,7 +58,7 @@ function typeVariant(type) {
 
 function formatDate(date) {
   if (!date) return "—"
-  return new Date(date).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric" })
+  return new Date(date).toLocaleDateString("es-PE", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" })
 }
 
 function SortableHeader({ label, field, currentField, currentOrder, onSort, className }) {
