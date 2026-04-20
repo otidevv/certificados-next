@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "motion/react"
 import {
   GraduationCap, Clock, Calendar, User, Users, MapPin,
   Loader2, CheckCircle, ChevronRight, Award, BookOpen, ArrowRight, X,
+  ClipboardCheck,
 } from "lucide-react"
 
 const TYPE_LABELS = {
@@ -179,7 +180,7 @@ function EnrollmentSuccessDialog({ open, onClose, course }) {
 }
 
 // --- Main Detail Component ---
-export function CourseDetail({ course, isEnrolled = false }) {
+export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
   const { data: session } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -400,6 +401,30 @@ export function CourseDetail({ course, isEnrolled = false }) {
                   <p className="font-semibold text-gray-900">{course.instructor}</p>
                 </div>
               </div>
+
+              {/* Admin actions */}
+              {(userRole === "admin" || userRole === "superadmin") && (
+                <div className="bg-amber-50 rounded-xl p-5 border border-amber-200">
+                  <p className="text-xs text-amber-700 font-medium mb-3 uppercase tracking-wide">
+                    Panel de administración
+                  </p>
+                  <div className="space-y-2">
+                    <Link
+                      href={`/admin/cursos/${course.id}/asistencia`}
+                      className="w-full inline-flex items-center justify-center gap-2 bg-amber-600 text-white py-2.5 rounded-lg font-semibold hover:bg-amber-700 transition-colors"
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      Tomar asistencia
+                    </Link>
+                    <Link
+                      href={`/admin/cursos/${course.id}/inscritos`}
+                      className="w-full inline-flex items-center justify-center gap-2 text-sm text-amber-700 hover:text-amber-900 transition-colors"
+                    >
+                      Ver inscritos <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

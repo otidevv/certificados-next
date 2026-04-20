@@ -33,7 +33,7 @@ export default async function CourseDetailPage({ params }) {
     <div className="min-h-screen flex flex-col bg-white">
       <PublicHeader />
       <main className="flex-1">
-        <CourseDetail course={course} isEnrolled={isEnrolled} />
+        <CourseDetail course={course} isEnrolled={isEnrolled} userRole={session?.user?.role} />
       </main>
       <PublicFooter />
     </div>
