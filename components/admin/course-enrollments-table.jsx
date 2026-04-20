@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Search, X, Users, ArrowLeft, Loader2, Mail, Phone, FileText, Download,
+  ClipboardCheck,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { DataTablePagination } from "./data-table-pagination"
@@ -136,15 +137,22 @@ export function CourseEnrollmentsTable({ course, data }) {
     <div className="space-y-4">
       {/* Header */}
       <motion.div className="flex flex-col gap-3" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease }}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
           <Button variant="outline" size="sm" asChild>
             <Link href="/admin/cursos">
               <ArrowLeft className="mr-2 h-4 w-4" />Volver
             </Link>
           </Button>
-          <Button size="sm" onClick={exportToExcel} className="cursor-pointer">
-            <Download className="mr-2 h-4 w-4" />Exportar Excel
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" asChild className="cursor-pointer">
+              <Link href={`/admin/cursos/${course.id}/asistencia`}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />Tomar asistencia
+              </Link>
+            </Button>
+            <Button size="sm" onClick={exportToExcel} className="cursor-pointer">
+              <Download className="mr-2 h-4 w-4" />Exportar Excel
+            </Button>
+          </div>
         </div>
         <div>
           <div className="flex items-center gap-2 flex-wrap">
