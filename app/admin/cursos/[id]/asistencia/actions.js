@@ -23,7 +23,8 @@ export async function toggleAttendance(courseId, enrollmentId, attended) {
       where: { id: enrollmentId },
       data: { attended: Boolean(attended) },
     })
-    revalidatePath(`/admin/cursos/${courseId}/asistencia`)
+    // No revalidatePath on single toggle — client keeps optimistic state,
+    // DB is persisted; avoids transition pile-up on rapid clicks.
     return { ok: true }
   } catch (e) {
     console.error("toggleAttendance error:", e)

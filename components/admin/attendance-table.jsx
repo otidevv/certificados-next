@@ -46,7 +46,8 @@ function formatDate(date) {
 export function AttendanceTable({ course, enrollments }) {
   const [rows, setRows] = useState(enrollments)
   const [search, setSearch] = useState("")
-  const [isPending, startTransition] = useTransition()
+  const [pendingIds, setPendingIds] = useState(() => new Set())
+  const [isBulkPending, startBulkTransition] = useTransition()
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -63,17 +64,31 @@ export function AttendanceTable({ course, enrollments }) {
 
   const presentCount = rows.filter((r) => r.attended).length
   const totalCount = rows.length
+  const anyPending = pendingIds.size > 0 || isBulkPending
 
-  function handleToggle(enrollmentId, nextValue) {
-    const previous = rows
+  async function handleToggle(enrollmentId, nextValue) {
     setRows((prev) => prev.map((r) => (r.id === enrollmentId ? { ...r, attended: nextValue } : r)))
-    startTransition(async () => {
+    setPendingIds((prev) => {
+      const next = new Set(prev)
+      next.add(enrollmentId)
+      return next
+    })
+    try {
       const res = await toggleAttendance(course.id, enrollmentId, nextValue)
       if (res?.error) {
-        setRows(previous)
+        setRows((prev) => prev.map((r) => (r.id === enrollmentId ? { ...r, attended: !nextValue } : r)))
         toast.error(res.error)
       }
-    })
+    } catch (e) {
+      setRows((prev) => prev.map((r) => (r.id === enrollmentId ? { ...r, attended: !nextValue } : r)))
+      toast.error("Error de red al guardar")
+    } finally {
+      setPendingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(enrollmentId)
+        return next
+      })
+    }
   }
 
   function handleBulk(value) {
@@ -81,7 +96,7 @@ export function AttendanceTable({ course, enrollments }) {
     if (!confirm(`¿Marcar a todos los inscritos como ${label}?`)) return
     const previous = rows
     setRows((prev) => prev.map((r) => ({ ...r, attended: value })))
-    startTransition(async () => {
+    startBulkTransition(async () => {
       const res = await bulkMarkAttendance(course.id, value)
       if (res?.error) {
         setRows(previous)
@@ -112,7 +127,7 @@ export function AttendanceTable({ course, enrollments }) {
               variant="outline"
               size="sm"
               onClick={() => handleBulk(false)}
-              disabled={isPending || totalCount === 0}
+              disabled={anyPending || totalCount === 0}
               className="cursor-pointer"
             >
               Marcar todos ausentes
@@ -120,7 +135,7 @@ export function AttendanceTable({ course, enrollments }) {
             <Button
               size="sm"
               onClick={() => handleBulk(true)}
-              disabled={isPending || totalCount === 0}
+              disabled={anyPending || totalCount === 0}
               className="cursor-pointer"
             >
               <CheckCheck className="mr-2 h-4 w-4" />Marcar todos presentes
@@ -197,7 +212,7 @@ export function AttendanceTable({ course, enrollments }) {
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead className="w-32 text-center">
                     <span className="inline-flex items-center gap-1">
-                      {isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+                      {anyPending && <Loader2 className="h-3 w-3 animate-spin" />}
                       Asistió
                     </span>
                   </TableHead>
@@ -234,7 +249,7 @@ export function AttendanceTable({ course, enrollments }) {
                         <Checkbox
                           checked={r.attended}
                           onCheckedChange={(checked) => handleToggle(r.id, Boolean(checked))}
-                          disabled={isPending}
+                          disabled={pendingIds.has(r.id) || isBulkPending}
                           aria-label={`Marcar asistencia de ${r.firstName} ${r.paternalSurname}`}
                         />
                       </TableCell>
