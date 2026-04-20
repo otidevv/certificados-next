@@ -96,6 +96,7 @@ model Enrollment {
   maternalSurname String
   email           String
   phone           String?
+  attended        Boolean  @default(false)
   enrolledAt      DateTime @default(now())
 
   @@unique([courseId, documentNumber])
