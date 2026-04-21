@@ -21,6 +21,7 @@ model User {
   maternalSurname String?
   role            String       @default("user") // "superadmin" | "admin" | "user"
   status          String       @default("ACTIVE") // "ACTIVE" | "INACTIVE"
+  passwordChangedAt DateTime?  // Used to invalidate old JWTs after password change
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   templates       Template[]

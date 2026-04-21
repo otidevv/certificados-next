@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/sonner"
 
 export default async function AdminLayout({ children }) {
   const session = await auth()
-  if (!session) redirect("/auth/login")
+  if (!session?.user?.id) redirect("/auth/login")
 
   return (
     <TooltipProvider>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "motion/react"
 import {
   GraduationCap, Clock, Calendar, User, Users, MapPin,
   Loader2, CheckCircle, ChevronRight, Award, BookOpen, ArrowRight, X,
-  ClipboardCheck,
+  ClipboardCheck, LogIn, UserPlus, AlertCircle,
 } from "lucide-react"
 
 const TYPE_LABELS = {
@@ -179,35 +179,133 @@ function EnrollmentSuccessDialog({ open, onClose, course }) {
   )
 }
 
+// --- Auth Choice Dialog (shown when anonymous user clicks Inscribirse) ---
+function EnrollChoiceDialog({ open, onClose, course }) {
+  const loginHref = `/auth/login?redirect=${encodeURIComponent(`/cursos/${course.id}`)}`
+  const registerHref = `/auth/register?redirect=${encodeURIComponent(`/cursos/${course.id}`)}`
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 24, stiffness: 320 }}
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+          >
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              aria-label="Cerrar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="h-2 bg-gradient-to-r from-unamad via-emerald-500 to-unamad" />
+
+            <div className="px-6 pt-8 pb-6">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-unamad/10">
+                <GraduationCap className="h-7 w-7 text-unamad" />
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-900 text-center mb-1">
+                Inscríbete en este curso
+              </h2>
+              <p className="text-sm text-gray-500 text-center leading-snug mb-5 line-clamp-2">
+                {course.name}
+              </p>
+
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Para inscribirte necesitas una cuenta. ¿Ya tienes una?
+              </p>
+
+              <div className="space-y-2.5">
+                <Link
+                  href={loginHref}
+                  className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Ya tengo cuenta, iniciar sesión
+                </Link>
+
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">o</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+
+                <Link
+                  href={registerHref}
+                  className="flex items-center justify-center gap-2 w-full border-2 border-unamad text-unamad py-3 rounded-xl font-semibold hover:bg-unamad hover:text-white transition-all text-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Crear cuenta nueva
+                </Link>
+              </div>
+
+              <p className="mt-5 text-[11px] text-gray-400 text-center">
+                Tu inscripción se completará automáticamente después.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 // --- Main Detail Component ---
 export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [enrolling, setEnrolling] = useState(false)
   const [enrolled, setEnrolled] = useState(isEnrolled)
   const [enrollError, setEnrollError] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
+  const [showChoice, setShowChoice] = useState(false)
 
   // Check if user just came back from registration with auto-enrollment
   useEffect(() => {
     if (isEnrolled && !showSuccess) {
-      // Check if this is a fresh redirect (user just registered and was auto-enrolled)
-      const justRegistered = sessionStorage.getItem("just_enrolled_" + course.id)
-      if (justRegistered) {
+      const justEnrolled = sessionStorage.getItem("just_enrolled_" + course.id)
+      if (justEnrolled) {
         sessionStorage.removeItem("just_enrolled_" + course.id)
         setShowSuccess(true)
       }
     }
-  }, [isEnrolled, course.id])
+  }, [isEnrolled, course.id, showSuccess])
+
+  // Surface enrollment failure coming back from registration flow
+  useEffect(() => {
+    if (searchParams.get("enroll_failed") === "1") {
+      setEnrollError("Tu cuenta se creó pero no pudimos inscribirte al curso. Intenta inscribirte manualmente.")
+      // Clean the URL so the message does not stick on refresh
+      const url = new URL(window.location.href)
+      url.searchParams.delete("enroll_failed")
+      window.history.replaceState({}, "", url.toString())
+    }
+  }, [searchParams])
 
   const spotsLeft = course.spots ? course.spots - course._count.enrollments : null
   const isFull = spotsLeft !== null && spotsLeft <= 0
 
   async function handleEnrollClick() {
+    // Still loading session — ignore click to avoid wrong branch
+    if (sessionStatus === "loading") return
+
     if (!session) {
-      sessionStorage.setItem("just_enrolled_" + course.id, "1")
-      router.push(`/auth/register?redirect=/cursos/${course.id}`)
+      setShowChoice(true)
       return
     }
 
@@ -372,7 +470,10 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
                   )}
 
                   {enrollError && (
-                    <p className="text-sm text-center text-red-600">{enrollError}</p>
+                    <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+                      <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <span>{enrollError}</span>
+                    </div>
                   )}
 
                   {course.spots && !enrolled && (
@@ -429,6 +530,13 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
           </div>
         </div>
       </div>
+
+      {/* Auth choice dialog for anonymous users */}
+      <EnrollChoiceDialog
+        open={showChoice}
+        onClose={() => setShowChoice(false)}
+        course={course}
+      />
 
       {/* Success celebration dialog */}
       <EnrollmentSuccessDialog

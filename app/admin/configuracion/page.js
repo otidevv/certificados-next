@@ -5,7 +5,7 @@ import { SettingsClient } from "@/components/admin/settings-client"
 
 export default async function ConfiguracionPage() {
   const session = await auth()
-  if (!session) redirect("/auth/login")
+  if (!session?.user?.id) redirect("/auth/login")
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },

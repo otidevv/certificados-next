@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { validatePassword } from "@/lib/password-policy"
+import { sendPasswordChangedNotification } from "@/lib/email"
 
 async function requireAdmin() {
   const session = await auth()
-  if (!session || !["admin", "superadmin"].includes(session.user.role)) {
+  if (!session?.user?.id || !["admin", "superadmin"].includes(session.user.role)) {
     return { error: "No autorizado", session: null }
   }
   return { session, error: null }
@@ -15,6 +17,10 @@ async function requireAdmin() {
 
 function validateEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function normalizeEmail(raw) {
+  return typeof raw === "string" ? raw.trim().toLowerCase() : ""
 }
 
 // --- CREATE USER ---
@@ -27,7 +33,7 @@ export async function createUserAction(_prevState, formData) {
   const firstName = formData.get("firstName")?.trim()
   const paternalSurname = formData.get("paternalSurname")?.trim()
   const maternalSurname = formData.get("maternalSurname")?.trim()
-  const email = formData.get("email")?.trim()
+  const email = normalizeEmail(formData.get("email"))
   const password = formData.get("password")
   const role = formData.get("role")
 
@@ -42,19 +48,26 @@ export async function createUserAction(_prevState, formData) {
   if (!email) fieldErrors.email = "Email es requerido"
   else if (!validateEmail(email)) fieldErrors.email = "Email no tiene formato válido"
   if (!password) fieldErrors.password = "Contraseña es requerida"
-  else if (password.length < 6) fieldErrors.password = "Mínimo 6 caracteres"
+  else {
+    const pwdErr = validatePassword(password)
+    if (pwdErr) fieldErrors.password = pwdErr
+  }
   if (!role || !["user", "admin", "superadmin"].includes(role))
     fieldErrors.role = "Rol es requerido"
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { documentNumber }] },
+  const existingEmail = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { id: true },
   })
-  if (existing) {
-    if (existing.email === email) return { fieldErrors: { email: "Este email ya está registrado" } }
-    return { fieldErrors: { documentNumber: "Este documento ya está registrado" } }
-  }
+  if (existingEmail) return { fieldErrors: { email: "Este email ya está registrado" } }
+
+  const existingDoc = await prisma.user.findFirst({
+    where: { documentNumber },
+    select: { id: true },
+  })
+  if (existingDoc) return { fieldErrors: { documentNumber: "Este documento ya está registrado" } }
 
   const hashedPassword = await bcrypt.hash(password, 12)
   const name = `${firstName} ${paternalSurname} ${maternalSurname}`
@@ -82,7 +95,7 @@ export async function updateUserAction(_prevState, formData) {
   const firstName = formData.get("firstName")?.trim()
   const paternalSurname = formData.get("paternalSurname")?.trim()
   const maternalSurname = formData.get("maternalSurname")?.trim()
-  const email = formData.get("email")?.trim()
+  const email = normalizeEmail(formData.get("email"))
   const role = formData.get("role")
 
   if (!userId) return { error: "ID de usuario requerido" }
@@ -103,7 +116,8 @@ export async function updateUserAction(_prevState, formData) {
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
   const existingEmail = await prisma.user.findFirst({
-    where: { email, NOT: { id: userId } },
+    where: { email: { equals: email, mode: "insensitive" }, NOT: { id: userId } },
+    select: { id: true },
   })
   if (existingEmail) return { fieldErrors: { email: "Este email ya está registrado" } }
 
@@ -163,7 +177,7 @@ export async function toggleUserStatusAction(userId) {
   return { success: true }
 }
 
-// --- RESET PASSWORD ---
+// --- RESET PASSWORD (admin sets password for another user) ---
 export async function resetPasswordAction(_prevState, formData) {
   const { error } = await requireAdmin()
   if (error) return { error }
@@ -176,7 +190,10 @@ export async function resetPasswordAction(_prevState, formData) {
 
   const fieldErrors = {}
   if (!newPassword) fieldErrors.newPassword = "Nueva contraseña es requerida"
-  else if (newPassword.length < 6) fieldErrors.newPassword = "Mínimo 6 caracteres"
+  else {
+    const pwdErr = validatePassword(newPassword)
+    if (pwdErr) fieldErrors.newPassword = pwdErr
+  }
   if (!confirmPassword) fieldErrors.confirmPassword = "Confirmar contraseña"
   else if (newPassword !== confirmPassword)
     fieldErrors.confirmPassword = "Las contraseñas no coinciden"
@@ -189,7 +206,14 @@ export async function resetPasswordAction(_prevState, formData) {
   const hashed = await bcrypt.hash(newPassword, 12)
   await prisma.user.update({
     where: { id: userId },
-    data: { password: hashed },
+    // Stamping passwordChangedAt invalidates any active JWTs for the target
+    // user within the next refresh window (~5 min).
+    data: { password: hashed, passwordChangedAt: new Date() },
+  })
+
+  // Notify the target so they know an admin reset their password.
+  sendPasswordChangedNotification(user.email).catch((err) => {
+    console.error("Failed to send password-changed email:", err)
   })
 
   revalidatePath("/admin/usuarios")
@@ -199,10 +223,10 @@ export async function resetPasswordAction(_prevState, formData) {
 // --- UPDATE PROFILE (for settings page) ---
 export async function updateProfileAction(_prevState, formData) {
   const session = await auth()
-  if (!session) return { error: "No autenticado" }
+  if (!session?.user?.id) return { error: "No autenticado" }
 
   const name = formData.get("name")?.trim()
-  const email = formData.get("email")?.trim()
+  const email = normalizeEmail(formData.get("email"))
 
   const fieldErrors = {}
   if (!name) fieldErrors.name = "Nombre es requerido"
@@ -212,7 +236,8 @@ export async function updateProfileAction(_prevState, formData) {
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors }
 
   const existing = await prisma.user.findFirst({
-    where: { email, NOT: { id: session.user.id } },
+    where: { email: { equals: email, mode: "insensitive" }, NOT: { id: session.user.id } },
+    select: { id: true },
   })
   if (existing) return { fieldErrors: { email: "Este email ya está registrado" } }
 
@@ -228,7 +253,7 @@ export async function updateProfileAction(_prevState, formData) {
 // --- CHANGE PASSWORD (for settings page) ---
 export async function changePasswordAction(_prevState, formData) {
   const session = await auth()
-  if (!session) return { error: "No autenticado" }
+  if (!session?.user?.id) return { error: "No autenticado" }
 
   const currentPassword = formData.get("currentPassword")
   const newPassword = formData.get("newPassword")
@@ -237,7 +262,10 @@ export async function changePasswordAction(_prevState, formData) {
   const fieldErrors = {}
   if (!currentPassword) fieldErrors.currentPassword = "Contraseña actual es requerida"
   if (!newPassword) fieldErrors.newPassword = "Nueva contraseña es requerida"
-  else if (newPassword.length < 6) fieldErrors.newPassword = "Mínimo 6 caracteres"
+  else {
+    const pwdErr = validatePassword(newPassword)
+    if (pwdErr) fieldErrors.newPassword = pwdErr
+  }
   if (!confirmPassword) fieldErrors.confirmPassword = "Confirmar contraseña"
   else if (newPassword !== confirmPassword)
     fieldErrors.confirmPassword = "Las contraseñas no coinciden"
@@ -250,12 +278,20 @@ export async function changePasswordAction(_prevState, formData) {
   const isValid = await bcrypt.compare(currentPassword, user.password)
   if (!isValid) return { fieldErrors: { currentPassword: "Contraseña actual incorrecta" } }
 
+  if (currentPassword === newPassword) {
+    return { fieldErrors: { newPassword: "La nueva contraseña debe ser distinta a la actual" } }
+  }
+
   const hashed = await bcrypt.hash(newPassword, 12)
   await prisma.user.update({
     where: { id: session.user.id },
-    data: { password: hashed },
+    data: { password: hashed, passwordChangedAt: new Date() },
+  })
+
+  sendPasswordChangedNotification(user.email).catch((err) => {
+    console.error("Failed to send password-changed email:", err)
   })
 
   revalidatePath("/admin/configuracion")
-  return { success: true }
+  return { success: true, requiresReauth: true }
 }

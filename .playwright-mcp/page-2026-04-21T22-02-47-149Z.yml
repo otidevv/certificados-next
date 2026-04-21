@@ -1,0 +1,146 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD Universidad Nacional Amazonica de Madre de Dios" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+          - generic [ref=e8]:
+            - paragraph [ref=e9]: Universidad Nacional Amazonica
+            - paragraph [ref=e10]: de Madre de Dios
+        - navigation [ref=e11]:
+          - link "Inicio" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - link "Capacitacion" [ref=e13] [cursor=pointer]:
+            - /url: /#cursos
+          - link "Cursos" [ref=e14] [cursor=pointer]:
+            - /url: /cursos
+          - link "Certificados" [ref=e15] [cursor=pointer]:
+            - /url: /certificados
+        - link "Ingresar" [ref=e17] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e18]
+          - text: Ingresar
+    - generic [ref=e21]:
+      - generic:
+        - img
+        - img
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - paragraph [ref=e26]: Centro de Capacitacion
+            - heading "CAPACITA-T" [level=1] [ref=e27]
+          - paragraph [ref=e28]: Encuentra cursos, talleres y capacitaciones para desarrollar y fortalecer tus competencias profesionales.
+          - generic [ref=e29]:
+            - button "Ver Cursos" [ref=e30] [cursor=pointer]
+            - link "Registrate para inscribirte" [ref=e31] [cursor=pointer]:
+              - /url: /auth/register
+        - generic [ref=e32]:
+          - img "Capacitacion" [ref=e34]
+          - img "Tecnologia" [ref=e36]
+          - img "Ingenieria" [ref=e38]
+          - img "Estudiantes" [ref=e40]
+          - img "Taller" [ref=e42]
+      - img [ref=e44]
+    - generic [ref=e47]:
+      - heading "Aliados" [level=2] [ref=e49]
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - img "Google" [ref=e55]
+          - img "Universidad 2" [ref=e56]
+          - img "Universidad 3" [ref=e57]
+          - img "Universidad 4" [ref=e58]
+          - img "UNSAAC" [ref=e59]
+          - img "Turnitin" [ref=e60]
+        - generic [ref=e61]:
+          - img [ref=e62]
+          - img [ref=e63]
+          - img [ref=e64]
+          - img [ref=e65]
+          - img [ref=e66]
+          - img [ref=e67]
+    - generic [ref=e69]:
+      - generic [ref=e70]:
+        - heading "Cursos Disponibles" [level=2] [ref=e71]
+        - paragraph [ref=e72]: Selecciona un curso y completa tu inscripcion. Puedes inscribirte con o sin cuenta.
+      - link "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Capacitacion CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” JEFFERSON MORALES ZAVALETA, Alberto Peña Mondragón 1h Virtual" [ref=e74] [cursor=pointer]:
+        - /url: /cursos/cmo0rbc0f0000b0tu3649n45l
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - img "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [ref=e77]
+            - generic [ref=e78]: Capacitacion
+          - generic [ref=e79]:
+            - heading "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [level=3] [ref=e80]
+            - paragraph [ref=e81]:
+              - img [ref=e82]
+              - text: JEFFERSON MORALES ZAVALETA, Alberto Peña Mondragón
+            - generic [ref=e85]:
+              - generic [ref=e86]:
+                - img [ref=e87]
+                - text: 1h
+              - generic [ref=e90]: Virtual
+      - link "Explorar todos los cursos" [ref=e92] [cursor=pointer]:
+        - /url: /cursos
+        - img [ref=e93]
+        - text: Explorar todos los cursos
+    - contentinfo [ref=e96]:
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - generic [ref=e100]:
+            - img "UNAMAD" [ref=e101]
+            - generic [ref=e102]:
+              - paragraph [ref=e103]: UNAMAD
+              - paragraph [ref=e104]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e105]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e106]:
+          - heading "Plataforma" [level=4] [ref=e107]
+          - list [ref=e108]:
+            - listitem [ref=e109]:
+              - link "Cursos disponibles" [ref=e110] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e111]:
+              - link "Generador de certificados" [ref=e112] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e113]:
+              - link "Herramientas" [ref=e114] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e115]:
+          - heading "Acceso" [level=4] [ref=e116]
+          - list [ref=e117]:
+            - listitem [ref=e118]:
+              - link "Iniciar sesion" [ref=e119] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e120]:
+              - link "Registrarse" [ref=e121] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e122]:
+              - link "Panel administrativo" [ref=e123] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e124]:
+          - heading "Contacto" [level=4] [ref=e125]
+          - list [ref=e126]:
+            - listitem [ref=e127]:
+              - img [ref=e128]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e131]:
+              - img [ref=e132]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e134]:
+              - img [ref=e135]
+              - text: (082) 571-046
+      - generic [ref=e138]:
+        - paragraph [ref=e139]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e140]:
+          - link "Facebook" [ref=e141] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e142]
+          - link "YouTube" [ref=e144] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e145]
+          - link "TikTok" [ref=e147] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e148]
+  - button "Open Next.js Dev Tools" [ref=e155] [cursor=pointer]:
+    - img [ref=e156]

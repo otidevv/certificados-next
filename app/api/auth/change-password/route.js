@@ -2,11 +2,24 @@ import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import prisma from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { rateLimit } from "@/lib/rate-limit"
+import { validatePassword } from "@/lib/password-policy"
+import { sendPasswordChangedNotification } from "@/lib/email"
 
 export async function POST(request) {
   const session = await auth()
-  if (!session) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 })
+  }
+
+  // Throttle per user (guards both against brute-forcing the current password
+  // and against session-hijack attackers rapidly changing credentials).
+  const rl = rateLimit(`change-pwd:${session.user.id}`, 5, 15 * 60 * 1000)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: `Demasiados intentos. Espera ${rl.retryAfter}s.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    )
   }
 
   try {
@@ -16,8 +29,9 @@ export async function POST(request) {
       return NextResponse.json({ error: "Todos los campos son requeridos" }, { status: 400 })
     }
 
-    if (newPassword.length < 6) {
-      return NextResponse.json({ error: "La nueva contrasena debe tener al menos 6 caracteres" }, { status: 400 })
+    const passwordError = validatePassword(newPassword)
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     const user = await prisma.user.findUnique({ where: { id: session.user.id } })
@@ -27,18 +41,28 @@ export async function POST(request) {
 
     const isValid = await bcrypt.compare(currentPassword, user.password)
     if (!isValid) {
-      return NextResponse.json({ error: "Contrasena actual incorrecta" }, { status: 400 })
+      return NextResponse.json({ error: "Contraseña actual incorrecta" }, { status: 400 })
+    }
+
+    if (currentPassword === newPassword) {
+      return NextResponse.json({ error: "La nueva contraseña debe ser distinta a la actual" }, { status: 400 })
     }
 
     const hashed = await bcrypt.hash(newPassword, 12)
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { password: hashed },
+      data: { password: hashed, passwordChangedAt: new Date() },
     })
 
-    return NextResponse.json({ message: "Contrasena actualizada" })
+    // Best-effort notification; a mail transport failure should not block
+    // the success response.
+    sendPasswordChangedNotification(user.email).catch((err) => {
+      console.error('Failed to send password-changed email:', err)
+    })
+
+    return NextResponse.json({ message: "Contraseña actualizada" })
   } catch (error) {
-    console.error("Error al cambiar contrasena:", error)
+    console.error("Error al cambiar contraseña:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
   }
 }

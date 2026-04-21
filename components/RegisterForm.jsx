@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { UserPlus, Loader2, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,11 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { safeRedirectOr } from '@/lib/safe-redirect';
+import { validatePassword, PASSWORD_POLICY_TEXT } from '@/lib/password-policy';
 
 export default function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '';
+  const { data: session, status: sessionStatus } = useSession();
+  const redirectUrl = safeRedirectOr(searchParams.get('redirect'), '');
   // Extract courseId from redirect like /cursos/abc123
   const courseId = redirectUrl.match(/^\/cursos\/([^/]+)$/)?.[1] || '';
   const [documentType, setDocumentType] = useState('DNI');
@@ -63,25 +66,43 @@ export default function RegisterForm() {
     return () => clearTimeout(timer);
   }, [documentNumber, documentType, lookupDni]);
 
+  // Already authenticated? Send them to the redirect (or home).
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && session?.user?.id) {
+      router.replace(redirectUrl || '/');
+    }
+  }, [sessionStatus, session, redirectUrl, router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Las contrasenas no coinciden');
+      setError('Las contraseñas no coinciden');
       return;
     }
-    if (password.length < 6) {
-      setError('La contrasena debe tener al menos 6 caracteres');
+    const pwdErr = validatePassword(password);
+    if (pwdErr) {
+      setError(pwdErr);
       return;
     }
 
     setIsLoading(true);
     try {
+      const normalizedEmail = email.trim().toLowerCase();
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password, courseId: courseId || undefined }),
+        body: JSON.stringify({
+          documentType,
+          documentNumber: documentNumber.trim(),
+          firstName: firstName.trim(),
+          paternalSurname: paternalSurname.trim(),
+          maternalSurname: maternalSurname.trim(),
+          email: normalizedEmail,
+          password,
+          courseId: courseId || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -90,20 +111,28 @@ export default function RegisterForm() {
       }
 
       // Auto-login after registration
-      const loginResult = await signIn('credentials', { email, password, redirect: false });
+      const loginResult = await signIn('credentials', { email: normalizedEmail, password, redirect: false });
       if (loginResult?.error) {
         // Login failed but account was created - send to login page
         router.push('/auth/login?registered=true');
         return;
       }
 
-      // Redirect to course (already enrolled) or home
+      // Flag confetti only if the server actually enrolled us
+      if (courseId && data.enrolled) {
+        sessionStorage.setItem('just_enrolled_' + courseId, '1');
+      }
+
+      // Redirect to course (even if enrollment failed, user can retry manually there)
       if (redirectUrl) {
-        router.push(redirectUrl);
+        const sep = redirectUrl.includes('?') ? '&' : '?';
+        const target = courseId && data.enrolled === false
+          ? `${redirectUrl}${sep}enroll_failed=1`
+          : redirectUrl;
+        router.push(target);
       } else {
         router.push('/');
       }
-      router.refresh();
     } catch {
       setError('Error al conectar con el servidor');
     } finally {
@@ -171,25 +200,25 @@ export default function RegisterForm() {
               {/* Nombres */}
               <div className="space-y-2">
                 <Label htmlFor="firstName">Nombres</Label>
-                <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nombres completos" required />
+                <Input id="firstName" name="firstName" autoComplete="given-name" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nombres completos" required />
               </div>
 
               {/* Apellidos */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="paternalSurname">Apellido paterno</Label>
-                  <Input id="paternalSurname" value={paternalSurname} onChange={(e) => setPaternalSurname(e.target.value)} placeholder="Apellido paterno" required />
+                  <Input id="paternalSurname" name="paternalSurname" autoComplete="family-name" value={paternalSurname} onChange={(e) => setPaternalSurname(e.target.value)} placeholder="Apellido paterno" required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="maternalSurname">Apellido materno</Label>
-                  <Input id="maternalSurname" value={maternalSurname} onChange={(e) => setMaternalSurname(e.target.value)} placeholder="Apellido materno" required />
+                  <Input id="maternalSurname" name="maternalSurname" autoComplete="additional-name" value={maternalSurname} onChange={(e) => setMaternalSurname(e.target.value)} placeholder="Apellido materno" required />
                 </div>
               </div>
 
               {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electronico</Label>
-                <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required />
+                <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required />
               </div>
 
               {/* Contraseñas */}
@@ -197,7 +226,7 @@ export default function RegisterForm() {
                 <div className="space-y-2">
                   <Label htmlFor="password">Contraseña</Label>
                   <div className="relative">
-                    <Input id="password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Min. 6 caracteres" required className="pr-9" />
+                    <Input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={PASSWORD_POLICY_TEXT} required className="pr-9" />
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" tabIndex={-1}>
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -206,7 +235,7 @@ export default function RegisterForm() {
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirmar</Label>
                   <div className="relative">
-                    <Input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetir" required className="pr-9" />
+                    <Input id="confirmPassword" name="confirmPassword" type={showConfirmPassword ? 'text' : 'password'} autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Repetir" required className="pr-9" />
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer" tabIndex={-1}>
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -225,7 +254,10 @@ export default function RegisterForm() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Ya tienes cuenta? </span>
-              <Link href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/login'} className="text-unamad font-semibold hover:text-unamad-dark">
+              <Link
+                href={redirectUrl ? `/auth/login?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/login'}
+                className="text-unamad font-semibold hover:text-unamad-dark"
+              >
                 Inicia sesión
               </Link>
             </div>

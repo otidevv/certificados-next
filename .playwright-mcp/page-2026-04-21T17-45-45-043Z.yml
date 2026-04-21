@@ -1,0 +1,133 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e5]:
+        - link "UNAMAD Universidad Nacional Amazonica de Madre de Dios" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "UNAMAD" [ref=e7]
+          - generic [ref=e8]:
+            - paragraph [ref=e9]: Universidad Nacional Amazonica
+            - paragraph [ref=e10]: de Madre de Dios
+        - navigation [ref=e11]:
+          - link "Inicio" [ref=e12] [cursor=pointer]:
+            - /url: /
+          - link "Capacitacion" [ref=e13] [cursor=pointer]:
+            - /url: /#cursos
+          - link "Cursos" [ref=e14] [cursor=pointer]:
+            - /url: /cursos
+          - link "Certificados" [ref=e15] [cursor=pointer]:
+            - /url: /certificados
+        - link "Ingresar" [ref=e17] [cursor=pointer]:
+          - /url: /auth/login
+          - img [ref=e18]
+          - text: Ingresar
+    - main [ref=e21]:
+      - generic [ref=e23]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - heading "Explora todos los cursos" [level=1] [ref=e26]
+            - paragraph [ref=e27]: Mostrando 1 de 1
+          - combobox [ref=e29]:
+            - option "Mas recientes" [selected]
+            - option "Titulo A-Z"
+            - option "Titulo Z-A"
+            - option "Mas horas"
+        - generic [ref=e30]:
+          - complementary [ref=e31]:
+            - generic [ref=e32]:
+              - paragraph [ref=e33]: Buscador
+              - generic [ref=e34]:
+                - img [ref=e35]
+                - textbox "Buscar curso..." [ref=e38]
+            - generic [ref=e39]:
+              - paragraph [ref=e40]: Categorias
+              - generic [ref=e42] [cursor=pointer]:
+                - checkbox "Capacitacion (1)" [ref=e43]
+                - text: Capacitacion
+                - generic [ref=e44]: (1)
+            - generic [ref=e45]:
+              - paragraph [ref=e46]: Entidades
+              - generic [ref=e48] [cursor=pointer]:
+                - checkbox "Centro Preuniversitario" [ref=e49]
+                - generic [ref=e50]: Centro Preuniversitario
+          - link "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” Capacitacion CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA” ● Centro Preuniversitario JEFFERSON MORALES ZAVALETA, Alberto Peña Mondragón 1h Virtual" [ref=e53] [cursor=pointer]:
+            - /url: /cursos/cmo0rbc0f0000b0tu3649n45l
+            - generic [ref=e54]:
+              - generic [ref=e55]:
+                - img "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [ref=e56]
+                - generic [ref=e57]: Capacitacion
+              - generic [ref=e58]:
+                - heading "CERTIFICADOS CURSO - TALLER_“FORTALECIMIENTO DE COMPETENCIAS PARA LA INVESTIGACIÓN FORMATIVA”" [level=3] [ref=e59]
+                - paragraph [ref=e60]:
+                  - generic [ref=e61]: ●
+                  - text: Centro Preuniversitario
+                - paragraph [ref=e62]:
+                  - img [ref=e63]
+                  - text: JEFFERSON MORALES ZAVALETA, Alberto Peña Mondragón
+                - generic [ref=e66]:
+                  - generic [ref=e67]:
+                    - img [ref=e68]
+                    - text: 1h
+                  - generic [ref=e71]: Virtual
+    - contentinfo [ref=e72]:
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - generic [ref=e76]:
+            - img "UNAMAD" [ref=e77]
+            - generic [ref=e78]:
+              - paragraph [ref=e79]: UNAMAD
+              - paragraph [ref=e80]:
+                - text: Universidad Nacional
+                - text: Amazonica de Madre de Dios
+          - paragraph [ref=e81]: Formando profesionales con excelencia academica al servicio de la Amazonia y el Peru.
+        - generic [ref=e82]:
+          - heading "Plataforma" [level=4] [ref=e83]
+          - list [ref=e84]:
+            - listitem [ref=e85]:
+              - link "Cursos disponibles" [ref=e86] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e87]:
+              - link "Generador de certificados" [ref=e88] [cursor=pointer]:
+                - /url: /certificados
+            - listitem [ref=e89]:
+              - link "Herramientas" [ref=e90] [cursor=pointer]:
+                - /url: /herramientas
+        - generic [ref=e91]:
+          - heading "Acceso" [level=4] [ref=e92]
+          - list [ref=e93]:
+            - listitem [ref=e94]:
+              - link "Iniciar sesion" [ref=e95] [cursor=pointer]:
+                - /url: /auth/login
+            - listitem [ref=e96]:
+              - link "Registrarse" [ref=e97] [cursor=pointer]:
+                - /url: /auth/register
+            - listitem [ref=e98]:
+              - link "Panel administrativo" [ref=e99] [cursor=pointer]:
+                - /url: /admin
+        - generic [ref=e100]:
+          - heading "Contacto" [level=4] [ref=e101]
+          - list [ref=e102]:
+            - listitem [ref=e103]:
+              - img [ref=e104]
+              - text: Av. Jorge Chavez 1160, Puerto Maldonado
+            - listitem [ref=e107]:
+              - img [ref=e108]
+              - text: capacitacion@unamad.edu.pe
+            - listitem [ref=e110]:
+              - img [ref=e111]
+              - text: (082) 571-046
+      - generic [ref=e114]:
+        - paragraph [ref=e115]: © 2026 Universidad Nacional Amazonica de Madre de Dios. Todos los derechos reservados.
+        - generic [ref=e116]:
+          - link "Facebook" [ref=e117] [cursor=pointer]:
+            - /url: https://www.facebook.com/UNAMAD
+            - img [ref=e118]
+          - link "YouTube" [ref=e120] [cursor=pointer]:
+            - /url: https://www.youtube.com/@unamadoficial
+            - img [ref=e121]
+          - link "TikTok" [ref=e123] [cursor=pointer]:
+            - /url: https://www.tiktok.com/@unamad_oficial
+            - img [ref=e124]
+  - button "Open Next.js Dev Tools" [ref=e131] [cursor=pointer]:
+    - img [ref=e132]
+  - alert [ref=e135]

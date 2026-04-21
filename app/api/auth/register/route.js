@@ -1,10 +1,29 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
+import { validatePassword } from '@/lib/password-policy';
 
 export async function POST(request) {
   try {
-    const { documentType, documentNumber, firstName, paternalSurname, maternalSurname, email, password, courseId } = await request.json();
+    const ip = getClientIp(request);
+    const rl = rateLimit(`register:${ip}`, 5, 15 * 60 * 1000);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: `Demasiados intentos. Vuelve a intentarlo en ${rl.retryAfter}s.` },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+      );
+    }
+
+    const body = await request.json();
+    const documentType = body.documentType;
+    const documentNumber = typeof body.documentNumber === 'string' ? body.documentNumber.trim() : '';
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const paternalSurname = typeof body.paternalSurname === 'string' ? body.paternalSurname.trim() : '';
+    const maternalSurname = typeof body.maternalSurname === 'string' ? body.maternalSurname.trim() : '';
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+    const courseId = body.courseId;
 
     // Validar campos requeridos
     if (!documentType || !documentNumber || !firstName || !paternalSurname || !maternalSurname || !email || !password) {
@@ -39,28 +58,26 @@ export async function POST(request) {
       );
     }
 
-    // Validar longitud de contraseña
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'La contraseña debe tener al menos 6 caracteres' },
-        { status: 400 }
-      );
+    // Validar contraseña contra la política compartida
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 });
     }
 
-    // Verificar si el email o documento ya existe
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { documentNumber },
-        ],
-      },
+    // Verificar si el email (case-insensitive) o documento ya existe
+    const existingByEmail = await prisma.user.findFirst({
+      where: { email: { equals: email, mode: 'insensitive' } },
+      select: { id: true },
     });
+    if (existingByEmail) {
+      return NextResponse.json({ error: 'El email ya está registrado' }, { status: 400 });
+    }
 
-    if (existingUser) {
-      if (existingUser.email === email) {
-        return NextResponse.json({ error: 'El email ya está registrado' }, { status: 400 });
-      }
+    const existingByDoc = await prisma.user.findFirst({
+      where: { documentNumber },
+      select: { id: true },
+    });
+    if (existingByDoc) {
       return NextResponse.json({ error: 'El número de documento ya está registrado' }, { status: 400 });
     }
 
@@ -70,7 +87,7 @@ export async function POST(request) {
     // Nombre completo calculado
     const name = `${firstName} ${paternalSurname} ${maternalSurname}`;
 
-    // Crear usuario
+    // Crear usuario (email ya normalizado a lowercase)
     const user = await prisma.user.create({
       data: {
         email,

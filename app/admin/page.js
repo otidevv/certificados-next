@@ -5,7 +5,7 @@ import { DashboardClient } from "@/components/admin/dashboard-client"
 
 export default async function AdminDashboard() {
   const session = await auth()
-  if (!session) redirect("/auth/login")
+  if (!session?.user?.id) redirect("/auth/login")
 
   const [totalUsers, activeUsers, totalTemplates, recentUsers, usersByMonth, templatesByMonth] =
     await Promise.all([

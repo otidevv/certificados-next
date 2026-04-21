@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic"
 
 export default async function MisCursosPage() {
   const session = await auth()
-  if (!session) redirect("/auth/login")
+  if (!session?.user?.id) redirect("/auth/login")
 
   const enrollments = await prisma.enrollment.findMany({
     where: { userId: session.user.id },

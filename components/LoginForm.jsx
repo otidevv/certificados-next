@@ -1,24 +1,42 @@
 'use client';
 
-import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { LogIn, Loader2, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { safeRedirectOr } from '@/lib/safe-redirect';
+
+const ERROR_MESSAGES = {
+  invalid_credentials: 'Correo o contraseña incorrectos',
+  account_inactive: 'Tu cuenta ha sido desactivada. Contacta al administrador',
+  missing_fields: 'Completa el correo y la contraseña',
+  rate_limited: 'Demasiados intentos. Espera unos minutos antes de volver a intentar.',
+};
 
 export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectUrl = searchParams.get('redirect') || '';
+  const { data: session, status: sessionStatus } = useSession();
+  const redirectUrl = safeRedirectOr(searchParams.get('redirect'), '/');
+  const justRegistered = searchParams.get('registered') === 'true';
+  const passwordChanged = searchParams.get('password_changed') === 'true';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Already authenticated? Send them to the redirect (or home).
+  useEffect(() => {
+    if (sessionStatus === 'authenticated' && session?.user?.id) {
+      router.replace(redirectUrl);
+    }
+  }, [sessionStatus, session, redirectUrl, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -27,19 +45,18 @@ export default function LoginForm() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError(ERROR_MESSAGES[result.code] || 'No se pudo iniciar sesión. Intenta nuevamente');
       } else {
-        router.push(redirectUrl || '/');
-        router.refresh();
+        router.push(redirectUrl);
       }
     } catch {
-      setError('Error al iniciar sesion');
+      setError('Error al iniciar sesión');
     } finally {
       setIsLoading(false);
     }
@@ -60,6 +77,18 @@ export default function LoginForm() {
         <Card>
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {justRegistered && !error && (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800 flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>Cuenta creada correctamente. Inicia sesión para continuar.</span>
+                </div>
+              )}
+              {passwordChanged && !error && (
+                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-800 flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>Contraseña actualizada. Inicia sesión con la nueva contraseña.</span>
+                </div>
+              )}
               {error && (
                 <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
                   {error}
@@ -70,7 +99,10 @@ export default function LoginForm() {
                 <Label htmlFor="email">Correo electronico</Label>
                 <Input
                   id="email"
+                  name="email"
                   type="email"
+                  autoComplete="email"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="tu@email.com"
@@ -83,7 +115,9 @@ export default function LoginForm() {
                 <div className="relative">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Tu contraseña"
@@ -117,7 +151,10 @@ export default function LoginForm() {
 
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">No tienes cuenta? </span>
-              <Link href={redirectUrl ? `/auth/register?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/register'} className="text-unamad font-semibold hover:text-unamad-dark">
+              <Link
+                href={redirectUrl && redirectUrl !== '/' ? `/auth/register?redirect=${encodeURIComponent(redirectUrl)}` : '/auth/register'}
+                className="text-unamad font-semibold hover:text-unamad-dark"
+              >
                 Regístrate
               </Link>
             </div>

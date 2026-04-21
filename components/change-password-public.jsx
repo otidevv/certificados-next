@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import { signOut } from "next-auth/react"
 import { KeyRound, Loader2, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import { validatePassword, PASSWORD_POLICY_TEXT } from "@/lib/password-policy"
 
 export function ChangePasswordPublic() {
   const [currentPassword, setCurrentPassword] = useState("")
@@ -23,12 +25,17 @@ export function ChangePasswordPublic() {
     e.preventDefault()
     setError("")
 
-    if (newPassword.length < 6) {
-      setError("La nueva contraseña debe tener al menos 6 caracteres")
+    const pwdErr = validatePassword(newPassword)
+    if (pwdErr) {
+      setError(pwdErr)
       return
     }
     if (newPassword !== confirmPassword) {
       setError("Las contraseñas no coinciden")
+      return
+    }
+    if (currentPassword === newPassword) {
+      setError("La nueva contraseña debe ser distinta a la actual")
       return
     }
 
@@ -57,10 +64,15 @@ export function ChangePasswordPublic() {
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Contraseña actualizada</h2>
-          <p className="text-gray-500 mb-6">Tu contraseña ha sido cambiada exitosamente.</p>
-          <Link href="/" className="inline-flex items-center gap-2 bg-unamad text-white px-6 py-3 rounded-lg font-semibold hover:bg-unamad-dark transition-all text-sm">
-            Volver al inicio
-          </Link>
+          <p className="text-gray-500 mb-6">
+            Por seguridad cerramos tu sesión. Inicia sesión nuevamente con tu nueva contraseña.
+          </p>
+          <Button
+            onClick={() => signOut({ callbackUrl: "/auth/login?password_changed=true" })}
+            className="bg-unamad hover:bg-unamad-dark cursor-pointer"
+          >
+            Ir a iniciar sesión
+          </Button>
         </div>
       </div>
     )
@@ -91,7 +103,9 @@ export function ChangePasswordPublic() {
                 <div className="relative">
                   <Input
                     id="currentPassword"
+                    name="currentPassword"
                     type={showCurrent ? "text" : "password"}
+                    autoComplete="current-password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="Tu contraseña actual"
@@ -109,10 +123,12 @@ export function ChangePasswordPublic() {
                 <div className="relative">
                   <Input
                     id="newPassword"
+                    name="newPassword"
                     type={showNew ? "text" : "password"}
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={PASSWORD_POLICY_TEXT}
                     required
                     className="pr-9"
                   />
@@ -127,7 +143,9 @@ export function ChangePasswordPublic() {
                 <div className="relative">
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type={showConfirm ? "text" : "password"}
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Repetir nueva contraseña"

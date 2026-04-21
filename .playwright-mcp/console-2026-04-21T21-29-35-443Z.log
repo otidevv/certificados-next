@@ -1,0 +1,57 @@
+[     414ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[     515ms] [ERROR] %c%s%c [31m[auth][error][0m JWTSessionError: Read more at https://errors.authjs.dev#jwtsessionerror background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[     516ms] [ERROR] %c%s%c [31m[auth][cause][0m: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   PrismaClientValidationError: 
+Invalid `__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$prisma$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].user.findUnique()` invocation in
+D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\[root-of-the-server]__fb3d0735._.js:258:163
+
+  255 // Periodic re-validation against the DB so that role/status changes
+  256 // (e.g. an admin deactivating a user) propagate within ~5 minutes.
+  257 if (token?.id && (!token.lastRefresh || Date.now() - token.lastRefresh > SESSION_REFRESH_MS)) {
+→ 258     const fresh = await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$prisma$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["default"].user.findUnique({
+            where: {
+              id: "cmnzb3m9d0000ictu6nvqre5w"
+            },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              status: true,
+              passwordChangedAt: true,
+              ~~~~~~~~~~~~~~~~~
+              documentType: true,
+              documentNumber: true,
+              firstName: true,
+              paternalSurname: true,
+              maternalSurname: true,
+          ?   password?: true,
+          ?   createdAt?: true,
+          ?   updatedAt?: true,
+          ?   templates?: true,
+          ?   enrollments?: true,
+          ?   _count?: true
+            }
+          })
+
+Unknown field `passwordChangedAt` for select statement on model `User`. Available options are marked with ?.
+    at rr (D:\sistemas unamad\certificados-next\node_modules\@prisma\client\runtime\client.js:10:1379)
+    at Vr.handleRequestError (D:\sistemas unamad\certificados-next\node_modules\@prisma\client\runtime\client.js:65:7815)
+    at Vr.handleAndLogRequestError (D:\sistemas unamad\certificados-next\node_modules\@prisma\client\runtime\client.js:65:7467)
+    at Vr.request (D:\sistemas unamad\certificados-next\node_modules\@prisma\client\runtime\client.js:65:7174)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async a (D:\sistemas unamad\certificados-next\node_modules\@prisma\client\runtime\client.js:75:5816)
+    at async Object.jwt (D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\[root-of-the-server]__fb3d0735._.js:258:31)
+    at async Module.session (D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\node_modules_@auth_core_e00e322b._.js:4553:27)
+    at async AuthInternal (D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\node_modules_@auth_core_e00e322b._.js:5131:24)
+    at async Auth (D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\node_modules_@auth_core_e00e322b._.js:5370:34)
+    at async Promise.all (index 0)
+    at async LoginPage (D:\sistemas unamad\certificados-next\.next\dev\server\chunks\ssr\[root-of-the-server]__a4e60fd4._.js:414:31) @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[     517ms] [ERROR] %c%s%c [31m[auth][details][0m: background: #e6e6e6;background: light-dark(rgba(0,0,0,0.1), rgba(255,255,255,0.25));color: #000000;color: light-dark(#000000, #ffffff);border-radius: 2px  Server   {} @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:3127
+[     541ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[   19955ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=E7W9B1SI8GdFfqpd_Bqbx' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[   23323ms] [ERROR] WebSocket connection to 'ws://localhost:3000/_next/webpack-hmr?id=E7W9B1SI8GdFfqpd_Bqbx' failed: Error in connection establishment: net::ERR_CONNECTION_REFUSED @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_client_17643121._.js:10878
+[   26932ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[   27818ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[   27846ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[   27985ms] [LOG] [Fast Refresh] rebuilding @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
+[   28039ms] [LOG] [Fast Refresh] done in 160ms @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297

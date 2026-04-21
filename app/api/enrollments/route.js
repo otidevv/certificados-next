@@ -32,7 +32,7 @@ export async function POST(request) {
     // Get session
     const session = await auth()
 
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Debes iniciar sesion para inscribirte" }, { status: 401 })
     }
 

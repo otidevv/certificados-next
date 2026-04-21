@@ -1,0 +1,194 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e5]:
+      - list [ref=e7]:
+        - listitem [ref=e8]:
+          - link "UNAMAD Panel de Gestión" [ref=e9] [cursor=pointer]:
+            - /url: /admin
+            - img [ref=e11]
+            - generic [ref=e15]:
+              - generic [ref=e16]: UNAMAD
+              - generic [ref=e17]: Panel de Gestión
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: General
+          - list [ref=e22]:
+            - listitem [ref=e23]:
+              - link "Dashboard" [ref=e24] [cursor=pointer]:
+                - /url: /admin
+                - img [ref=e25]
+                - generic [ref=e30]: Dashboard
+        - generic [ref=e31]:
+          - generic [ref=e32]: Aplicaciones
+          - list [ref=e34]:
+            - listitem [ref=e35]:
+              - link "Certificados" [ref=e36] [cursor=pointer]:
+                - /url: /certificados
+                - img [ref=e37]
+                - generic [ref=e40]: Certificados
+            - listitem [ref=e41]:
+              - link "Herramientas" [ref=e42] [cursor=pointer]:
+                - /url: /herramientas
+                - img [ref=e43]
+                - generic [ref=e45]: Herramientas
+        - generic [ref=e46]:
+          - generic [ref=e47]: Gestión
+          - list [ref=e49]:
+            - listitem [ref=e50]:
+              - link "Cursos" [ref=e51] [cursor=pointer]:
+                - /url: /admin/cursos
+                - img [ref=e52]
+                - generic [ref=e55]: Cursos
+            - listitem [ref=e56]:
+              - link "Sedes" [ref=e57] [cursor=pointer]:
+                - /url: /admin/sedes
+                - img [ref=e58]
+                - generic [ref=e61]: Sedes
+            - listitem [ref=e62]:
+              - link "Dependencias" [ref=e63] [cursor=pointer]:
+                - /url: /admin/dependencias
+                - img [ref=e64]
+                - generic [ref=e69]: Dependencias
+            - listitem [ref=e70]:
+              - link "Usuarios" [ref=e71] [cursor=pointer]:
+                - /url: /admin/usuarios
+                - img [ref=e72]
+                - generic [ref=e77]: Usuarios
+        - generic [ref=e78]:
+          - generic [ref=e79]: Sistema
+          - list [ref=e81]:
+            - listitem [ref=e82]:
+              - link "Configuración" [ref=e83] [cursor=pointer]:
+                - /url: /admin/configuracion
+                - img [ref=e84]
+                - generic [ref=e87]: Configuración
+      - list [ref=e89]:
+        - listitem [ref=e90]:
+          - button "A Administrador admin@unamad.edu.pe" [ref=e91]:
+            - generic [ref=e93]: A
+            - generic [ref=e94]:
+              - generic [ref=e95]: Administrador
+              - generic [ref=e96]: admin@unamad.edu.pe
+            - img [ref=e97]
+      - button "Toggle Sidebar" [ref=e99]
+    - generic [ref=e100]:
+      - banner [ref=e101]:
+        - button "Toggle Sidebar" [ref=e102]:
+          - img
+          - generic [ref=e103]: Toggle Sidebar
+        - navigation "breadcrumb" [ref=e104]:
+          - list [ref=e105]:
+            - listitem [ref=e106]:
+              - link "Dashboard" [disabled] [ref=e107]
+        - button "Cambiar tema" [ref=e109]:
+          - img
+          - generic [ref=e110]: Cambiar tema
+      - main [ref=e111]:
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - heading "Hola, Administrador" [level=1] [ref=e114]
+            - paragraph [ref=e115]: Aquí tienes un resumen de la actividad del sistema.
+          - generic [ref=e116]:
+            - generic [ref=e118]:
+              - generic [ref=e119]:
+                - generic [ref=e120]: Total Usuarios
+                - img [ref=e122]
+              - generic [ref=e127]:
+                - generic [ref=e128]: "6"
+                - paragraph [ref=e129]: Usuarios registrados
+            - generic [ref=e131]:
+              - generic [ref=e132]:
+                - generic [ref=e133]: Usuarios Activos
+                - img [ref=e135]
+              - generic [ref=e139]:
+                - generic [ref=e140]: "6"
+                - paragraph [ref=e141]: Con acceso al sistema
+            - generic [ref=e143]:
+              - generic [ref=e144]:
+                - generic [ref=e145]: Total Plantillas
+                - img [ref=e147]
+              - generic [ref=e150]:
+                - generic [ref=e151]: "0"
+                - paragraph [ref=e152]: Plantillas de certificados
+          - generic [ref=e153]:
+            - generic [ref=e156]:
+              - generic [ref=e157]:
+                - generic [ref=e158]: Registros Recientes
+                - paragraph [ref=e159]: Usuarios y plantillas de los últimos 6 meses
+              - img [ref=e161]
+            - generic [ref=e168]:
+              - generic [ref=e169]:
+                - generic [ref=e170]: Acceso Rápido
+                - paragraph [ref=e171]: Accede a las secciones del sistema
+              - generic [ref=e173]:
+                - link "Certificados" [ref=e174] [cursor=pointer]:
+                  - /url: /
+                  - img [ref=e176]
+                  - generic [ref=e179]: Certificados
+                - link "Herramientas" [ref=e180] [cursor=pointer]:
+                  - /url: /herramientas
+                  - img [ref=e182]
+                  - generic [ref=e184]: Herramientas
+                - link "Usuarios" [ref=e185] [cursor=pointer]:
+                  - /url: /admin/usuarios
+                  - img [ref=e187]
+                  - generic [ref=e192]: Usuarios
+                - link "Configuración" [ref=e193] [cursor=pointer]:
+                  - /url: /admin/configuracion
+                  - img [ref=e195]
+                  - generic [ref=e198]: Configuración
+          - generic [ref=e200]:
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - generic [ref=e203]: Usuarios Recientes
+                - paragraph [ref=e204]: Últimos usuarios registrados en el sistema
+              - img [ref=e206]
+            - generic [ref=e210]:
+              - generic [ref=e211]:
+                - generic [ref=e212]:
+                  - generic [ref=e214]: JM
+                  - generic [ref=e215]:
+                    - paragraph [ref=e216]: JEFFERSON MORALES ZAVALETA
+                    - paragraph [ref=e217]: jeferson@unamad.edu.pe
+                - generic [ref=e218]:
+                  - generic [ref=e219]: user
+                  - generic [ref=e220]: 16 abr. 2026
+              - generic [ref=e221]:
+                - generic [ref=e222]:
+                  - generic [ref=e224]: AP
+                  - generic [ref=e225]:
+                    - paragraph [ref=e226]: ALBERTO PEÑA GARCIA
+                    - paragraph [ref=e227]: pepe@unamad.edu.pe
+                - generic [ref=e228]:
+                  - generic [ref=e229]: user
+                  - generic [ref=e230]: 16 abr. 2026
+              - generic [ref=e231]:
+                - generic [ref=e232]:
+                  - generic [ref=e234]: JP
+                  - generic [ref=e235]:
+                    - paragraph [ref=e236]: JULIA PAULINA MONDRAGON CONDORI
+                    - paragraph [ref=e237]: julia@unamad.edu.pe
+                - generic [ref=e238]:
+                  - generic [ref=e239]: user
+                  - generic [ref=e240]: 16 abr. 2026
+              - generic [ref=e241]:
+                - generic [ref=e242]:
+                  - generic [ref=e244]: AP
+                  - generic [ref=e245]:
+                    - paragraph [ref=e246]: Alberto Peña Mondragón
+                    - paragraph [ref=e247]: apena@unamad.edu.pe
+                - generic [ref=e248]:
+                  - generic [ref=e249]: user
+                  - generic [ref=e250]: 15 abr. 2026
+              - generic [ref=e251]:
+                - generic [ref=e252]:
+                  - generic [ref=e254]: A
+                  - generic [ref=e255]:
+                    - paragraph [ref=e256]: Administrador
+                    - paragraph [ref=e257]: admin@unamad.edu.pe
+                - generic [ref=e258]:
+                  - generic [ref=e259]: superadmin
+                  - generic [ref=e260]: 15 abr. 2026
+  - region "Notifications alt+T"
+  - button "Open Next.js Dev Tools" [ref=e266] [cursor=pointer]:
+    - img [ref=e267]
