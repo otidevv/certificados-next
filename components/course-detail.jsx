@@ -381,8 +381,10 @@ function EnrollFormDialog({ open, onClose, course, onSuccess }) {
                         setLookupDone(false)
                       }}
                     >
-                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
+                      <SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger>
+                      {/* Modal is at z-[9998]; SelectContent portals to body and
+                          defaults to z-50 which would render behind the modal. */}
+                      <SelectContent className="z-[9999]">
                         <SelectItem value="DNI">DNI</SelectItem>
                         <SelectItem value="CE">CE</SelectItem>
                         <SelectItem value="PASAPORTE">Pasaporte</SelectItem>
