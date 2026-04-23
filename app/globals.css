@@ -173,3 +173,51 @@
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
+
+/* Print: show only the enrollment constancia on a single page.
+   Strategy: hide every body descendant that is not the constancia, not a
+   descendant of the constancia, and not an ancestor of the constancia.
+   Using display:none (not visibility:hidden) so the hidden content does not
+   inflate the document height and cause extra blank pages. */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    height: auto !important;
+  }
+  body :not(.constancia-root):not(.constancia-root *):not(:has(.constancia-root)) {
+    display: none !important;
+  }
+  /* Undo the fixed modal positioning for print — flow into the page normally */
+  .constancia-root {
+    position: static !important;
+    inset: auto !important;
+    padding: 0 !important;
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+    z-index: auto !important;
+  }
+  .constancia-card {
+    position: static !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  .constancia-print {
+    padding: 0 !important;
+    page-break-inside: avoid;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

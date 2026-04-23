@@ -101,6 +101,17 @@ export async function POST(request) {
       },
     });
 
+    // Claim any orphan enrollments previously made as guest with the same
+    // document number, so they show up in /mis-cursos.
+    try {
+      await prisma.enrollment.updateMany({
+        where: { userId: null, documentNumber },
+        data: { userId: user.id },
+      });
+    } catch (err) {
+      console.error('Failed to link orphan enrollments:', err);
+    }
+
     // Auto-inscribir al curso si se proporcionó courseId
     let enrolled = false;
     if (courseId) {

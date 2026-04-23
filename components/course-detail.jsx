@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -9,8 +9,9 @@ import { motion, AnimatePresence } from "motion/react"
 import {
   GraduationCap, Clock, Calendar, User, Users, MapPin,
   Loader2, CheckCircle, ChevronRight, Award, BookOpen, ArrowRight, X,
-  ClipboardCheck, LogIn, UserPlus, AlertCircle,
+  ClipboardCheck, AlertCircle, Printer, CheckCircle2,
 } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const TYPE_LABELS = {
   CURSO: "Curso", CAPACITACION: "Capacitacion", TALLER: "Taller",
@@ -50,127 +51,167 @@ function fireConfetti() {
   }, 400)
 }
 
-// --- Success Dialog ---
-function EnrollmentSuccessDialog({ open, onClose, course }) {
+// --- Constancia de Inscripción (formal receipt, printable) ---
+function buildConstanciaCode(enrollmentId, enrolledAt) {
+  const short = (enrollmentId || "").slice(-6).toUpperCase()
+  const d = new Date(enrolledAt || 0)
+  const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`
+  return `INS-${stamp}-${short}`
+}
+
+function EnrollmentConstancia({ open, onClose, course, enrollment, isAuthenticated }) {
   useEffect(() => {
     if (open) fireConfetti()
   }, [open])
 
+  if (!enrollment) return null
+
+  const fullName = [enrollment.firstName, enrollment.paternalSurname, enrollment.maternalSurname]
+    .filter(Boolean)
+    .join(" ")
+    .toUpperCase()
+  const enrolledAtValue = enrollment.enrolledAt || new Date().toISOString()
+  const code = buildConstanciaCode(enrollment.id, enrolledAtValue)
+  const enrolledAt = new Date(enrolledAtValue)
+  const enrolledAtStr = enrolledAt.toLocaleString("es-PE", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+    timeZone: "America/Lima",
+  })
+
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-[9998] flex items-center justify-center">
-          {/* Overlay */}
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center p-4 constancia-root">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm no-print"
             onClick={onClose}
           />
-
-          {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 30 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 10 }}
-            transition={{ type: "spring", damping: 25, stiffness: 350 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-[90%] max-w-md mx-4 overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", damping: 24, stiffness: 320 }}
+            className="constancia-card relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
           >
-            {/* Close button */}
             <button
+              type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer no-print"
+              aria-label="Cerrar"
             >
               <X className="h-5 w-5" />
             </button>
 
-            {/* Top gradient bar */}
-            <div className="h-2 bg-gradient-to-r from-unamad via-emerald-500 to-unamad" />
+            {/* Printable area */}
+            <div className="constancia-print px-8 pt-10 pb-6">
+              {/* Header UNAMAD */}
+              <div className="flex items-center gap-4 pb-5 mb-6 border-b-2 border-unamad">
+                <img src="/img/logo.png" alt="UNAMAD" className="h-16 w-16 object-contain shrink-0" />
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold">
+                    Universidad Nacional Amazónica de Madre de Dios
+                  </p>
+                  <p className="text-xs text-gray-500">Sistema de Certificación y Capacitación</p>
+                </div>
+              </div>
 
-            <div className="px-6 pt-8 pb-6 text-center">
-              {/* Animated check icon */}
+              {/* Success animation (screen only) */}
               <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
-                className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.15 }}
+                className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 no-print"
               >
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", damping: 10, stiffness: 300, delay: 0.5 }}
-                >
-                  <CheckCircle className="h-10 w-10 text-emerald-600" strokeWidth={2.5} />
-                </motion.div>
+                <CheckCircle className="h-8 w-8 text-emerald-600" strokeWidth={2.5} />
               </motion.div>
 
               {/* Title */}
-              <motion.h2
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="text-2xl font-bold text-gray-900 mb-1"
-              >
-                ¡Inscripción exitosa!
-              </motion.h2>
+              <div className="text-center mb-5">
+                <h2 className="text-2xl font-bold text-gray-900 tracking-wide">CONSTANCIA DE INSCRIPCIÓN</h2>
+                <p className="text-sm text-gray-500 mt-1 font-mono tracking-wider">{code}</p>
+              </div>
 
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="text-sm text-gray-500 mb-6"
-              >
-                Te has inscrito correctamente en
-              </motion.p>
-
-              {/* Course info card */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                className="bg-gray-50 rounded-xl p-4 mb-6 text-left border"
-              >
-                <p className="font-semibold text-gray-900 text-sm leading-snug mb-3">{course.name}</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-gray-500">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {formatDateShort(course.startDate)} — {formatDateShort(course.endDate)}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {course.hours}h
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {MODALITY_LABELS[course.modality]}
-                  </span>
+              {/* Body */}
+              <div className="text-gray-800 leading-relaxed text-[15px] space-y-3">
+                <p>Se deja constancia que:</p>
+                <p className="text-center font-bold text-lg text-gray-900 uppercase py-2">
+                  {fullName}
+                </p>
+                <p className="text-center text-sm text-gray-600">
+                  Identificado(a) con {enrollment.documentType} N° <span className="font-semibold">{enrollment.documentNumber}</span>
+                </p>
+                <p>Se ha registrado satisfactoriamente en:</p>
+                <div className="bg-gray-50 rounded-lg p-4 border my-3">
+                  <p className="font-semibold text-gray-900 text-[15px] leading-snug mb-3">
+                    {course.name}
+                  </p>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+                    <div>
+                      <dt className="text-gray-500">Tipo</dt>
+                      <dd className="text-gray-800 font-medium">{TYPE_LABELS[course.type]}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500">Modalidad</dt>
+                      <dd className="text-gray-800 font-medium">{MODALITY_LABELS[course.modality]}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500">Duración</dt>
+                      <dd className="text-gray-800 font-medium">{course.hours} horas</dd>
+                    </div>
+                    <div>
+                      <dt className="text-gray-500">Fechas</dt>
+                      <dd className="text-gray-800 font-medium">
+                        {formatDateShort(course.startDate)} — {formatDateShort(course.endDate)}
+                      </dd>
+                    </div>
+                  </dl>
                 </div>
-              </motion.div>
+                <p className="text-sm text-gray-600">
+                  Correo registrado: <span className="font-medium text-gray-800">{enrollment.email}</span>
+                </p>
+              </div>
 
-              {/* Actions */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                className="space-y-2"
+              {/* Footer */}
+              <div className="mt-6 pt-4 border-t text-xs text-gray-500 flex items-center justify-between">
+                <span>Registrado el {enrolledAtStr}</span>
+                <span className="flex items-center gap-1">
+                  <Award className="h-3.5 w-3.5" />
+                  Válido como comprobante
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-8 pb-6 space-y-2 no-print">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm cursor-pointer"
               >
+                <Printer className="h-4 w-4" />
+                Imprimir / Guardar como PDF
+              </button>
+              {isAuthenticated ? (
                 <Link
                   href="/mis-cursos"
-                  className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm"
+                  className="flex items-center justify-center gap-2 w-full border-2 border-unamad text-unamad py-2.5 rounded-xl font-semibold hover:bg-unamad hover:text-white transition-all text-sm"
                 >
                   <BookOpen className="h-4 w-4" />
                   Ver mis cursos
-                  <ArrowRight className="h-4 w-4" />
                 </Link>
-                <button
-                  onClick={onClose}
-                  className="w-full py-2.5 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium cursor-pointer"
-                >
-                  Seguir explorando
-                </button>
-              </motion.div>
+              ) : null}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors font-medium cursor-pointer"
+              >
+                Cerrar
+              </button>
             </div>
           </motion.div>
         </div>
@@ -179,10 +220,102 @@ function EnrollmentSuccessDialog({ open, onClose, course }) {
   )
 }
 
-// --- Auth Choice Dialog (shown when anonymous user clicks Inscribirse) ---
-function EnrollChoiceDialog({ open, onClose, course }) {
-  const loginHref = `/auth/login?redirect=${encodeURIComponent(`/cursos/${course.id}`)}`
-  const registerHref = `/auth/register?redirect=${encodeURIComponent(`/cursos/${course.id}`)}`
+// --- Guest Enrollment Form Dialog ---
+function EnrollFormDialog({ open, onClose, course, onSuccess }) {
+  const [documentType, setDocumentType] = useState("DNI")
+  const [documentNumber, setDocumentNumber] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [paternalSurname, setPaternalSurname] = useState("")
+  const [maternalSurname, setMaternalSurname] = useState("")
+  const [email, setEmail] = useState("")
+  const [phone, setPhone] = useState("")
+  const [isLookingUp, setIsLookingUp] = useState(false)
+  const [lookupDone, setLookupDone] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+
+  const lookupDni = useCallback(async (dni) => {
+    if (dni.length !== 8 || !/^\d{8}$/.test(dni)) return
+    setIsLookingUp(true)
+    try {
+      const res = await fetch(`/api/consulta-dni?dni=${dni}`)
+      if (!res.ok) throw new Error("not found")
+      const data = await res.json()
+      if (data.firstName) {
+        setFirstName(data.firstName)
+        setPaternalSurname(data.paternalSurname)
+        setMaternalSurname(data.maternalSurname)
+        setLookupDone(true)
+      }
+    } catch {
+      // User fills manually
+    } finally {
+      setIsLookingUp(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (documentType !== "DNI" || documentNumber.length !== 8) {
+      setLookupDone(false)
+      return
+    }
+    const t = setTimeout(() => lookupDni(documentNumber), 400)
+    return () => clearTimeout(t)
+  }, [documentNumber, documentType, lookupDni])
+
+  // Reset state when dialog closes so the next opening starts fresh
+  useEffect(() => {
+    if (!open) {
+      setError("")
+      setSubmitting(false)
+    }
+  }, [open])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError("")
+
+    if (!documentType || !documentNumber.trim() || !firstName.trim() || !paternalSurname.trim() || !maternalSurname.trim() || !email.trim()) {
+      setError("Completa todos los campos requeridos")
+      return
+    }
+    if (documentType === "DNI" && !/^\d{8}$/.test(documentNumber.trim())) {
+      setError("DNI debe tener 8 dígitos")
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setError("Correo electrónico inválido")
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const res = await fetch("/api/enrollments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courseId: course.id,
+          documentType,
+          documentNumber: documentNumber.trim(),
+          firstName: firstName.trim(),
+          paternalSurname: paternalSurname.trim(),
+          maternalSurname: maternalSurname.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim() || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "No se pudo completar la inscripción")
+        return
+      }
+      onSuccess(data.enrollment)
+    } catch {
+      setError("Error al conectar con el servidor")
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -197,15 +330,16 @@ function EnrollChoiceDialog({ open, onClose, course }) {
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ type: "spring", damping: 24, stiffness: 320 }}
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
           >
             <button
+              type="button"
               onClick={onClose}
-              className="absolute top-4 right-4 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+              className="absolute top-3.5 right-3.5 z-10 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
               aria-label="Cerrar"
             >
               <X className="h-5 w-5" />
@@ -213,49 +347,154 @@ function EnrollChoiceDialog({ open, onClose, course }) {
 
             <div className="h-2 bg-gradient-to-r from-unamad via-emerald-500 to-unamad" />
 
-            <div className="px-6 pt-8 pb-6">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-unamad/10">
-                <GraduationCap className="h-7 w-7 text-unamad" />
+            <div className="px-6 pt-7 pb-6">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-unamad/10">
+                <GraduationCap className="h-6 w-6 text-unamad" />
               </div>
-
-              <h2 className="text-xl font-bold text-gray-900 text-center mb-1">
-                Inscríbete en este curso
+              <h2 className="text-lg font-bold text-gray-900 text-center mb-1">
+                Inscripción al curso
               </h2>
-              <p className="text-sm text-gray-500 text-center leading-snug mb-5 line-clamp-2">
+              <p className="text-xs text-gray-500 text-center leading-snug mb-5 line-clamp-2 px-2">
                 {course.name}
               </p>
 
-              <p className="text-sm text-gray-600 text-center mb-6">
-                Para inscribirte necesitas una cuenta. ¿Ya tienes una?
-              </p>
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {error && (
+                  <div className="flex items-start gap-2 rounded-lg bg-red-50 border border-red-200 p-2.5 text-sm text-red-700">
+                    <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
 
-              <div className="space-y-2.5">
-                <Link
-                  href={loginHref}
-                  className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Ya tengo cuenta, iniciar sesión
-                </Link>
-
-                <div className="flex items-center gap-3 py-1">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-[11px] uppercase tracking-wider text-gray-400 font-medium">o</span>
-                  <div className="flex-1 h-px bg-gray-200" />
+                {/* Document */}
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="col-span-2">
+                    <label className="text-xs font-medium text-gray-700">Tipo doc.</label>
+                    <Select
+                      value={documentType}
+                      onValueChange={(v) => {
+                        setDocumentType(v)
+                        setDocumentNumber("")
+                        setFirstName("")
+                        setPaternalSurname("")
+                        setMaternalSurname("")
+                        setLookupDone(false)
+                      }}
+                    >
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DNI">DNI</SelectItem>
+                        <SelectItem value="CE">CE</SelectItem>
+                        <SelectItem value="PASAPORTE">Pasaporte</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="col-span-3">
+                    <label className="text-xs font-medium text-gray-700">N° documento</label>
+                    <div className="relative mt-1">
+                      <input
+                        type="text"
+                        value={documentNumber}
+                        onChange={(e) => setDocumentNumber(e.target.value)}
+                        placeholder={documentType === "DNI" ? "12345678" : "Número"}
+                        required
+                        className="w-full h-9 px-3 pr-8 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                      />
+                      {documentType === "DNI" && isLookingUp && (
+                        <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                      )}
+                      {documentType === "DNI" && lookupDone && !isLookingUp && (
+                        <CheckCircle2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                <Link
-                  href={registerHref}
-                  className="flex items-center justify-center gap-2 w-full border-2 border-unamad text-unamad py-3 rounded-xl font-semibold hover:bg-unamad hover:text-white transition-all text-sm"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Crear cuenta nueva
-                </Link>
-              </div>
+                {/* Names */}
+                <div>
+                  <label className="text-xs font-medium text-gray-700">Nombres</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Nombres completos"
+                    required
+                    autoComplete="given-name"
+                    className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-medium text-gray-700">Apellido paterno</label>
+                    <input
+                      type="text"
+                      value={paternalSurname}
+                      onChange={(e) => setPaternalSurname(e.target.value)}
+                      placeholder="Paterno"
+                      required
+                      autoComplete="family-name"
+                      className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700">Apellido materno</label>
+                    <input
+                      type="text"
+                      value={maternalSurname}
+                      onChange={(e) => setMaternalSurname(e.target.value)}
+                      placeholder="Materno"
+                      required
+                      autoComplete="additional-name"
+                      className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                    />
+                  </div>
+                </div>
 
-              <p className="mt-5 text-[11px] text-gray-400 text-center">
-                Tu inscripción se completará automáticamente después.
-              </p>
+                {/* Contact */}
+                <div>
+                  <label className="text-xs font-medium text-gray-700">Correo electrónico</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@correo.com"
+                    required
+                    autoComplete="email"
+                    inputMode="email"
+                    className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-700">
+                    Teléfono <span className="text-gray-400 font-normal">(opcional)</span>
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="999 999 999"
+                    autoComplete="tel"
+                    inputMode="tel"
+                    className="w-full h-9 px-3 border border-gray-200 rounded-md text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-unamad/40"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex items-center justify-center gap-2 w-full bg-unamad text-white py-3 rounded-xl font-semibold hover:bg-unamad-dark transition-all text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Inscribiendo...</>
+                  ) : (
+                    <><GraduationCap className="h-4 w-4" /> Confirmar inscripción</>
+                  )}
+                </button>
+
+                <p className="text-[11px] text-gray-400 text-center mt-2">
+                  Al inscribirte recibirás tu constancia. Los datos se usan solo para la inscripción al curso.
+                </p>
+              </form>
             </div>
           </motion.div>
         </div>
@@ -272,25 +511,13 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
   const [enrolling, setEnrolling] = useState(false)
   const [enrolled, setEnrolled] = useState(isEnrolled)
   const [enrollError, setEnrollError] = useState("")
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showChoice, setShowChoice] = useState(false)
-
-  // Check if user just came back from registration with auto-enrollment
-  useEffect(() => {
-    if (isEnrolled && !showSuccess) {
-      const justEnrolled = sessionStorage.getItem("just_enrolled_" + course.id)
-      if (justEnrolled) {
-        sessionStorage.removeItem("just_enrolled_" + course.id)
-        setShowSuccess(true)
-      }
-    }
-  }, [isEnrolled, course.id, showSuccess])
+  const [showForm, setShowForm] = useState(false)
+  const [lastEnrollment, setLastEnrollment] = useState(null)
 
   // Surface enrollment failure coming back from registration flow
   useEffect(() => {
     if (searchParams.get("enroll_failed") === "1") {
       setEnrollError("Tu cuenta se creó pero no pudimos inscribirte al curso. Intenta inscribirte manualmente.")
-      // Clean the URL so the message does not stick on refresh
       const url = new URL(window.location.href)
       url.searchParams.delete("enroll_failed")
       window.history.replaceState({}, "", url.toString())
@@ -304,11 +531,13 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
     // Still loading session — ignore click to avoid wrong branch
     if (sessionStatus === "loading") return
 
-    if (!session) {
-      setShowChoice(true)
+    // Guests fill out the inline form (no account required)
+    if (!session?.user?.id) {
+      setShowForm(true)
       return
     }
 
+    // Authenticated: enroll directly using profile data
     setEnrolling(true)
     setEnrollError("")
     try {
@@ -326,13 +555,19 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
         }
       } else {
         setEnrolled(true)
-        setShowSuccess(true)
+        setLastEnrollment(data.enrollment)
       }
     } catch {
       setEnrollError("Error al conectar con el servidor")
     } finally {
       setEnrolling(false)
     }
+  }
+
+  function handleGuestSuccess(enrollment) {
+    setShowForm(false)
+    setEnrolled(true)
+    setLastEnrollment(enrollment)
   }
 
   return (
@@ -531,18 +766,21 @@ export function CourseDetail({ course, isEnrolled = false, userRole = null }) {
         </div>
       </div>
 
-      {/* Auth choice dialog for anonymous users */}
-      <EnrollChoiceDialog
-        open={showChoice}
-        onClose={() => setShowChoice(false)}
+      {/* Guest enrollment form (anonymous users fill in their data) */}
+      <EnrollFormDialog
+        open={showForm}
+        onClose={() => setShowForm(false)}
         course={course}
+        onSuccess={handleGuestSuccess}
       />
 
-      {/* Success celebration dialog */}
-      <EnrollmentSuccessDialog
-        open={showSuccess}
-        onClose={() => setShowSuccess(false)}
+      {/* Constancia de inscripción — shown after successful enrollment */}
+      <EnrollmentConstancia
+        open={!!lastEnrollment}
+        onClose={() => setLastEnrollment(null)}
         course={course}
+        enrollment={lastEnrollment}
+        isAuthenticated={!!session?.user?.id}
       />
     </>
   )
