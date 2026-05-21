@@ -13,10 +13,11 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import {
   Search, X, Users, ArrowLeft, Loader2, Mail, Phone, FileText, Download,
-  ClipboardCheck,
+  ClipboardCheck, Pencil,
 } from "lucide-react"
 import * as XLSX from "xlsx"
 import { DataTablePagination } from "./data-table-pagination"
+import { EnrollmentEditDialog } from "./enrollment-edit-dialog"
 
 const ease = [0.22, 1, 0.36, 1]
 
@@ -54,6 +55,7 @@ export function CourseEnrollmentsTable({ course, data }) {
   const searchParams = useSearchParams()
   const [isNavigating, startTransition] = useTransition()
   const [searchValue, setSearchValue] = useState(searchParams.get("search") || "")
+  const [editing, setEditing] = useState(null)
 
   function exportToExcel() {
     const rows = []
@@ -230,12 +232,13 @@ export function CourseEnrollmentsTable({ course, data }) {
                   <TableHead className="hidden md:table-cell">Email</TableHead>
                   <TableHead className="hidden lg:table-cell">Teléfono</TableHead>
                   <TableHead>Fecha inscripción</TableHead>
+                  <TableHead className="w-[60px] text-right pr-2 sm:pr-4">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.enrollments.length === 0 && !isNavigating ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="h-40 text-center">
+                    <TableCell colSpan={6} className="h-40 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                           <Users className="h-7 w-7 text-muted-foreground/60" />
@@ -284,6 +287,17 @@ export function CourseEnrollmentsTable({ course, data }) {
                       <TableCell>
                         <span className="text-sm text-muted-foreground">{formatDateTime(enrollment.enrolledAt)}</span>
                       </TableCell>
+                      <TableCell className="text-right pr-2 sm:pr-4">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 cursor-pointer"
+                          onClick={() => setEditing(enrollment)}
+                          title="Editar inscripción"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -300,6 +314,12 @@ export function CourseEnrollmentsTable({ course, data }) {
           </CardContent>
         </Card>
       </motion.div>
+
+      <EnrollmentEditDialog
+        open={!!editing}
+        onOpenChange={(open) => { if (!open) setEditing(null) }}
+        enrollment={editing}
+      />
     </div>
   )
 }
