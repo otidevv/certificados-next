@@ -217,18 +217,77 @@ function Herramientas() {
     }
   };
 
+  // Convierte todos los Word en UNA sola llamada a LibreOffice (un arranque en
+  // vez de uno por archivo). Devuelve los PDFs como ArrayBuffer en el mismo
+  // orden que se enviaron; null en la posición de un archivo que falló.
+  const convertWordBatch = async (files) => {
+    const formData = new FormData();
+    for (const f of files) formData.append('file', f);
+    const response = await fetch('/api/convert-word-batch', { method: 'POST', body: formData });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || 'Error al convertir Word');
+    }
+    const zipBytes = await (await response.blob()).arrayBuffer();
+    const zip = await JSZip.loadAsync(zipBytes);
+    const result = [];
+    for (let i = 0; i < files.length; i++) {
+      const entry = zip.file(`${i}.pdf`);
+      result.push(entry ? await entry.async('arraybuffer') : null);
+    }
+    return result;
+  };
+
+  const applyPdfBytes = async (index, name, pdfBytes) => {
+    if (!pdfBytes) {
+      setDocInfos(prev => prev.map((item, idx) => idx === index ? { ...item, pageCount: -1, processing: false } : item));
+      toast.error(`Error: ${name}`);
+      return;
+    }
+    try {
+      const doc = await PDFDocument.load(pdfBytes);
+      const pageCount = doc.getPageCount();
+      setDocInfos(prev => prev.map((item, idx) => idx === index ? { ...item, pageCount, pdfBytes, processing: false } : item));
+    } catch {
+      setDocInfos(prev => prev.map((item, idx) => idx === index ? { ...item, pageCount: -1, processing: false } : item));
+      toast.error(`Error: ${name}`);
+    }
+  };
+
   const handleDocUpload = async (files) => {
     const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
     const infos = sorted.map(f => ({ file: f, pageCount: null, pdfBytes: null, processing: true }));
     setDocInfos(infos);
     toast.success(`${files.length} documento(s) cargados`);
+
+    // Los PDF se leen directo en el navegador (no necesitan LibreOffice); los
+    // Word se juntan para convertirlos todos de una sola vez.
+    const wordIndices = [];
+    const wordFiles = [];
     for (let i = 0; i < sorted.length; i++) {
+      if (/\.docx?$/i.test(sorted[i].name)) {
+        wordIndices.push(i);
+        wordFiles.push(sorted[i]);
+      } else {
+        try {
+          await applyPdfBytes(i, sorted[i].name, await sorted[i].arrayBuffer());
+        } catch {
+          await applyPdfBytes(i, sorted[i].name, null);
+        }
+      }
+    }
+
+    if (wordFiles.length > 0) {
       try {
-        const { pageCount, pdfBytes } = await getPageCount(sorted[i]);
-        setDocInfos(prev => prev.map((item, idx) => idx === i ? { ...item, pageCount, pdfBytes, processing: false } : item));
+        const pdfList = await convertWordBatch(wordFiles);
+        for (let k = 0; k < wordIndices.length; k++) {
+          await applyPdfBytes(wordIndices[k], sorted[wordIndices[k]].name, pdfList[k]);
+        }
       } catch {
-        setDocInfos(prev => prev.map((item, idx) => idx === i ? { ...item, pageCount: -1, processing: false } : item));
-        toast.error(`Error: ${sorted[i].name}`);
+        for (const i of wordIndices) {
+          setDocInfos(prev => prev.map((item, idx) => idx === i ? { ...item, pageCount: -1, processing: false } : item));
+        }
+        toast.error('Error al convertir los Word');
       }
     }
   };
