@@ -15,6 +15,7 @@ import {
   GraduationCap,
   MapPin,
   Network,
+  CalendarDays,
 } from "lucide-react"
 import {
   Sidebar,
@@ -59,6 +60,7 @@ const navigation = [
       { title: "Sedes", icon: MapPin, href: "/admin/sedes" },
       { title: "Dependencias", icon: Network, href: "/admin/dependencias" },
       { title: "Usuarios", icon: Users, href: "/admin/usuarios" },
+      { title: "Registros Mensuales", icon: CalendarDays, href: "/admin/registros" },
     ],
   },
   {

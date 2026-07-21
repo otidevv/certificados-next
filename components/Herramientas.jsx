@@ -1,13 +1,30 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import JSZip from 'jszip';
 import { PDFDocument } from 'pdf-lib';
 import { Upload, Download, Home, FileCheck, FolderOpen, FileText, ArrowLeft, ChevronRight, Plus, Trash2, Loader2, GripVertical } from 'lucide-react';
 import Swal from 'sweetalert2';
 import toast, { Toaster } from 'react-hot-toast';
-import * as XLSX from 'xlsx';
+import { extractRowsFromExcelFile } from '@/lib/planilla-excel';
+import { saveRegistrosMensualesAction } from '@/app/herramientas/actions';
+
+const MESES = [
+  { value: 1, label: 'Enero' },
+  { value: 2, label: 'Febrero' },
+  { value: 3, label: 'Marzo' },
+  { value: 4, label: 'Abril' },
+  { value: 5, label: 'Mayo' },
+  { value: 6, label: 'Junio' },
+  { value: 7, label: 'Julio' },
+  { value: 8, label: 'Agosto' },
+  { value: 9, label: 'Setiembre' },
+  { value: 10, label: 'Octubre' },
+  { value: 11, label: 'Noviembre' },
+  { value: 12, label: 'Diciembre' },
+];
 
 const TOOLS = [
   {
@@ -44,6 +61,8 @@ const TOOLS = [
 
 function Herramientas() {
   const [activeTool, setActiveTool] = useState(null);
+  const { data: session } = useSession();
+  const isAdmin = ['admin', 'superadmin'].includes(session?.user?.role);
 
   // Tool 1: Optimize PDFs
   const [zipFile, setZipFile] = useState(null);
@@ -54,7 +73,10 @@ function Herramientas() {
 
   // Tool 2: Organize PDFs - subida masiva con reordenamiento
   const [correlativo, setCorrelativo] = useState('');
-  const [excelInfos, setExcelInfos] = useState([]); // { file, dnis, sheetName, processing }
+  const [periodoMes, setPeriodoMes] = useState('');
+  const [periodoAnio, setPeriodoAnio] = useState('');
+  const [guardarRegistro, setGuardarRegistro] = useState(true);
+  const [excelInfos, setExcelInfos] = useState([]); // { file, dnis, rows, sheetName, regimenColumn, condicionColumn, processing }
   const [docInfos, setDocInfos] = useState([]); // { file, pageCount, pdfBytes, processing }
   const [isOrganizing, setIsOrganizing] = useState(false);
   const [organizeProgress, setOrganizeProgress] = useState(0);
@@ -70,6 +92,12 @@ function Herramientas() {
   const [convertProgress, setConvertProgress] = useState(0);
   const [convertTotal, setConvertTotal] = useState(0);
   const wordInputRef = useRef(null);
+
+  // El año por defecto se resuelve en el cliente: la página se prerenderiza en
+  // build, así que calcularlo durante el render dejaría el año congelado.
+  useEffect(() => {
+    setPeriodoAnio(String(new Date().getFullYear()));
+  }, []);
 
   // ─── Tool 1: Optimize PDFs ───
   const handleOptimizePDFs = async () => {
@@ -146,48 +174,6 @@ function Herramientas() {
   };
 
   // ─── Tool 2: Organize PDFs ───
-  const DNI_HEADERS = ['DNI', 'N° DOC', 'DOCUMENTO', 'NRO DOC', 'NUM DOC', 'N° DOCUMENTO', 'NRO DOCUMENTO'];
-
-  const extractDnisFromExcel = async (file) => {
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data);
-    let bestMatch = null;
-
-    for (const sheetName of workbook.SheetNames) {
-      if (bestMatch) break;
-      const sheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      if (jsonData.length < 2) continue;
-
-      for (let headerRowIdx = 0; headerRowIdx < Math.min(30, jsonData.length); headerRowIdx++) {
-        if (bestMatch) break;
-        const row = jsonData[headerRowIdx];
-        if (!row || row.length === 0) continue;
-
-        let dniColIndex = -1;
-        for (let col = 0; col < row.length; col++) {
-          const cellVal = String(row[col] ?? '').trim().toUpperCase();
-          if (DNI_HEADERS.includes(cellVal)) { dniColIndex = col; break; }
-        }
-        if (dniColIndex < 0) continue;
-
-        const candidateDnis = [];
-        for (let r = headerRowIdx + 1; r < jsonData.length; r++) {
-          const val = jsonData[r]?.[dniColIndex];
-          const strVal = String(val ?? '').trim();
-          if (!strVal || strVal.length === 0 || /^TOTAL/i.test(strVal) || /^BAJA/i.test(strVal)) break;
-          const cleanVal = strVal.replace(/[^0-9]/g, '');
-          if (cleanVal.length >= 6 && cleanVal.length <= 12) candidateDnis.push(cleanVal);
-        }
-
-        if (candidateDnis.length > 0 && (!bestMatch || candidateDnis.length > bestMatch.dnis.length)) {
-          bestMatch = { sheet: sheetName, column: String(row[dniColIndex]), dnis: candidateDnis };
-        }
-      }
-    }
-    return bestMatch;
-  };
-
   const getPageCount = async (file) => {
     const isWord = file.name.toLowerCase().endsWith('.docx') || file.name.toLowerCase().endsWith('.doc');
     let pdfBytes;
@@ -210,13 +196,21 @@ function Herramientas() {
 
   const handleExcelUpload = async (files) => {
     const sorted = [...files].sort((a, b) => a.name.localeCompare(b.name));
-    const infos = sorted.map(f => ({ file: f, dnis: [], sheetName: '', processing: true }));
+    const infos = sorted.map(f => ({ file: f, dnis: [], rows: [], sheetName: '', regimenColumn: null, condicionColumn: null, processing: true }));
     setExcelInfos(infos);
     toast.success(`${files.length} Excel(s) cargados`);
     for (let i = 0; i < sorted.length; i++) {
       try {
-        const result = await extractDnisFromExcel(sorted[i]);
-        setExcelInfos(prev => prev.map((item, idx) => idx === i ? { ...item, dnis: result ? result.dnis : [], sheetName: result ? result.sheet : '', processing: false } : item));
+        const result = await extractRowsFromExcelFile(sorted[i]);
+        setExcelInfos(prev => prev.map((item, idx) => idx === i ? {
+          ...item,
+          dnis: result ? result.dnis : [],
+          rows: result ? result.rows : [],
+          sheetName: result ? result.sheet : '',
+          regimenColumn: result ? result.regimenColumn : null,
+          condicionColumn: result ? result.condicionColumn : null,
+          processing: false,
+        } : item));
       } catch {
         setExcelInfos(prev => prev.map((item, idx) => idx === i ? { ...item, processing: false } : item));
       }
@@ -304,6 +298,12 @@ function Herramientas() {
       return;
     }
 
+    const shouldSave = guardarRegistro && isAdmin;
+    if (shouldSave && (!periodoMes || !periodoAnio)) {
+      await Swal.fire({ title: 'Periodo requerido', text: 'Selecciona el mes y el año del registro, o desactiva "Guardar registro mensual".', icon: 'warning', confirmButtonColor: '#9333ea', confirmButtonText: 'Entendido' });
+      return;
+    }
+
     try {
       setIsOrganizing(true);
       setOrganizeProgress(0);
@@ -358,6 +358,32 @@ function Herramientas() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      // El registro mensual va en su propio try: si la base de datos falla, el
+      // ZIP ya está descargado y no tiene sentido reportarlo como error de
+      // organización.
+      let saveMessage = '';
+      if (shouldSave) {
+        try {
+          const rows = excelInfos.flatMap((excel) =>
+            (excel.rows || []).map((row) => ({ ...row, sourceFile: excel.file.name })),
+          );
+          const result = await saveRegistrosMensualesAction({
+            year: Number(periodoAnio),
+            month: Number(periodoMes),
+            correlativo: correlativo.trim(),
+            rows,
+          });
+          if (result?.error) {
+            toast.error(`PDFs generados, pero no se guardó el registro: ${result.error}`, { duration: 6000 });
+          } else {
+            const mesLabel = MESES.find(m => m.value === Number(periodoMes))?.label;
+            saveMessage = ` · ${result.count} registro(s) guardados en ${mesLabel} ${periodoAnio}`;
+          }
+        } catch {
+          toast.error('PDFs generados, pero falló el guardado del registro mensual', { duration: 6000 });
+        }
+      }
+
       setIsOrganizing(false);
       setCorrelativo('');
       setExcelInfos([]);
@@ -366,7 +392,7 @@ function Herramientas() {
       setOrganizeTotalPDFs(0);
       if (excelInputRef.current) excelInputRef.current.value = '';
       if (docInputRef.current) docInputRef.current.value = '';
-      toast.success(`¡${totalPages} PDFs organizados exitosamente!`, { duration: 4000 });
+      toast.success(`¡${totalPages} PDFs organizados exitosamente!${saveMessage}`, { duration: saveMessage ? 6000 : 4000 });
     } catch (error) {
       console.error('Error al organizar PDFs:', error);
       setIsOrganizing(false);
@@ -616,13 +642,41 @@ function Herramientas() {
                 <li><strong>Paso 3:</strong> Click en "Emparejar" para detectar DNIs y contar páginas</li>
                 <li>Cada página se renombra como <code className="bg-blue-100 px-1 rounded">correlativo_DNI.pdf</code></li>
                 <li>Se organizan en carpetas de 50 (001-050, 051-100, etc.)</li>
+                <li>Si marcas <strong>Guardar registro mensual</strong>, se registra además el DNI, régimen laboral y condición en el mes elegido</li>
               </ul>
             </div>
 
-            {/* Correlativo */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Correlativo</label>
-              <input type="text" value={correlativo} onChange={(e) => setCorrelativo(e.target.value)} placeholder="Ej: 29" disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
+            {/* Correlativo + periodo */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Correlativo</label>
+                <input type="text" value={correlativo} onChange={(e) => setCorrelativo(e.target.value)} placeholder="Ej: 29" disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Mes {guardarRegistro && isAdmin && <span className="text-red-500">*</span>}</label>
+                <select value={periodoMes} onChange={(e) => setPeriodoMes(e.target.value)} disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                  <option value="">Selecciona…</option>
+                  {MESES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Año {guardarRegistro && isAdmin && <span className="text-red-500">*</span>}</label>
+                <input type="number" min="2000" max="2100" value={periodoAnio} onChange={(e) => setPeriodoAnio(e.target.value)} placeholder="Ej: 2026" disabled={isOrganizing} className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none transition-all text-gray-900 font-medium disabled:opacity-50 disabled:cursor-not-allowed" />
+              </div>
+            </div>
+
+            {/* Registro mensual */}
+            <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
+              <label className={`flex items-start gap-3 ${isAdmin && !isOrganizing ? 'cursor-pointer' : 'cursor-not-allowed'}`}>
+                <input type="checkbox" checked={guardarRegistro && isAdmin} onChange={(e) => setGuardarRegistro(e.target.checked)} disabled={!isAdmin || isOrganizing} className="mt-0.5 w-4 h-4 accent-violet-600 flex-shrink-0 disabled:opacity-50" />
+                <span className="text-sm">
+                  <span className="font-semibold text-gray-800">Guardar registro mensual en la base de datos</span>
+                  <span className="block text-gray-600 mt-0.5">Al terminar de generar el ZIP, se registra el número de documento, el régimen laboral y la condición de cada persona en el mes seleccionado.</span>
+                  {!isAdmin && (
+                    <span className="block text-amber-700 font-semibold mt-1">Inicia sesión como administrador para guardar. Los PDFs se organizan igual.</span>
+                  )}
+                </span>
+              </label>
             </div>
 
             {/* Subida masiva */}
@@ -651,6 +705,16 @@ function Herramientas() {
                               <span className="inline-flex items-center gap-1 text-amber-600"><Loader2 className="w-3 h-3 animate-spin" />Leyendo DNIs...</span>
                             ) : (
                               <span className="text-violet-700 font-semibold">{info.dnis.length} DNIs{info.sheetName ? ` (${info.sheetName})` : ''}</span>
+                            )}
+                            {!info.processing && info.dnis.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${info.regimenColumn ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {info.regimenColumn ? `Régimen: ${info.regimenColumn}` : 'Sin régimen laboral'}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${info.condicionColumn ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                  {info.condicionColumn ? `Condición: ${info.condicionColumn}` : 'Sin condición'}
+                                </span>
+                              </div>
                             )}
                           </div>
                         </div>

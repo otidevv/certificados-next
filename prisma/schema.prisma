@@ -104,6 +104,25 @@ model Enrollment {
   @@index([courseId])
 }
 
+model RegistroMensual {
+  id             String   @id @default(cuid())
+  documentNumber String   // DNI / número de documento tal como viene en el Excel
+  year           Int
+  month          Int      // 1-12
+  regimenLaboral String?  // null si el Excel no traía la columna
+  condicion      String?  // null si el Excel no traía la columna
+  correlativo    String?
+  sourceFile     String?  // Excel de origen, para rastrear de dónde salió el registro
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Una persona tiene como máximo un registro por mes: volver a subir el mismo
+  // periodo actualiza en vez de duplicar.
+  @@unique([documentNumber, year, month])
+  @@index([documentNumber])
+  @@index([year, month])
+}
+
 model Template {
   id             String   @id @default(cuid())
   userId         String
