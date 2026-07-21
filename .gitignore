@@ -44,3 +44,7 @@ next-env.d.ts
 
 # temp conversion files
 /tmp-conversions
+
+# uploads subidos en runtime — no versionar el contenido, sí la carpeta
+/public/uploads/courses/*
+!/public/uploads/courses/.gitkeep
